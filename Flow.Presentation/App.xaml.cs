@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using Flow.Application.Abstractions;
+using Flow.Application.Services;
 using Flow.Infrastructure.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,6 +23,10 @@ public partial class App : System.Windows.Application
                 // Register infrastructure stores
                 services.AddSingleton<ISettingsStore, JsonSettingsStore>();
                 services.AddSingleton(sp => sp.GetRequiredService<ISettingsStore>().Load());
+
+                // Register application services
+                services.AddSingleton<IDirectionDetector, DirectionDetector>();
+                services.AddScoped<ITranslationOrchestrator, TranslationOrchestrator>();
             })
             .Build();
     }

@@ -1,4 +1,5 @@
 using Flow.Application.Abstractions;
+using Flow.Application.Services;
 using Flow.Domain;
 using Xunit;
 
@@ -6,35 +7,9 @@ namespace Flow.Application.Tests;
 
 public class DirectionDetectorTests
 {
-    private class SimpleDirectionDetector : IDirectionDetector
-    {
-        public (Language Source, Language Target) DetectDirection(string text, Language defaultSource = Language.Ru, Language defaultTarget = Language.En)
-        {
-            var source = DetectLanguage(text, defaultSource);
-            var target = source == Language.Ru ? Language.En : Language.Ru;
-            return (source, target);
-        }
+    private readonly DirectionDetector _detector = new();
 
-        public Language DetectLanguage(string text, Language fallback = Language.Ru)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return fallback;
-
-            int cyrillicCount = 0;
-            int latinCount = 0;
-
-            foreach (char c in text)
-            {
-                if ((c >= 'а' && c <= 'я') || (c >= 'А' && c <= 'Я') || c == 'ё' || c == 'Ё')
-                    cyrillicCount++;
-                else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
-                    latinCount++;
-            }
-
-            if (cyrillicCount > latinCount) return Language.Ru;
-            if (latinCount > cyrillicCount) return Language.En;
-            return fallback;
-        }
-    }
+    // --- DetectDirection tests ---
 
     [Theory]
     [InlineData("Привет мир", Language.Ru, Language.En)]
@@ -43,13 +18,8 @@ public class DirectionDetectorTests
     [InlineData("How are you doing today?", Language.En, Language.Ru)]
     public void DetectDirection_WithClearLanguage_ResolvesCorrectDirection(string text, Language expectedSource, Language expectedTarget)
     {
-        // Arrange
-        IDirectionDetector detector = new SimpleDirectionDetector();
+        var (source, target) = _detector.DetectDirection(text);
 
-        // Act
-        var (source, target) = detector.DetectDirection(text);
-
-        // Assert
         Assert.Equal(expectedSource, source);
         Assert.Equal(expectedTarget, target);
     }
@@ -57,15 +27,111 @@ public class DirectionDetectorTests
     [Fact]
     public void DetectDirection_WithAmbiguousNumbersOrSymbols_FallsBackToDefaultDirection()
     {
-        // Arrange
-        IDirectionDetector detector = new SimpleDirectionDetector();
         string ambiguousText = "12345 !@#$%";
 
-        // Act
-        var (source, target) = detector.DetectDirection(ambiguousText, defaultSource: Language.Ru, defaultTarget: Language.En);
+        var (source, target) = _detector.DetectDirection(ambiguousText, defaultSource: Language.Ru, defaultTarget: Language.En);
 
-        // Assert
         Assert.Equal(Language.Ru, source);
         Assert.Equal(Language.En, target);
     }
+
+    [Fact]
+    public void DetectDirection_WithAmbiguousText_UsesCustomDefaults()
+    {
+        // When defaults are flipped, ambiguous text should return flipped defaults
+        var (source, target) = _detector.DetectDirection("12345", defaultSource: Language.En, defaultTarget: Language.Ru);
+
+        Assert.Equal(Language.En, source);
+        Assert.Equal(Language.Ru, target);
+    }
+
+    [Fact]
+    public void DetectDirection_RussianText_ProducesRuToEn()
+    {
+        var (source, target) = _detector.DetectDirection("Тестирование системы перевода");
+
+        Assert.Equal(Language.Ru, source);
+        Assert.Equal(Language.En, target);
+    }
+
+    [Fact]
+    public void DetectDirection_EnglishText_ProducesEnToRu()
+    {
+        var (source, target) = _detector.DetectDirection("Testing the translation system");
+
+        Assert.Equal(Language.En, source);
+        Assert.Equal(Language.Ru, target);
+    }
+
+    // --- DetectLanguage tests ---
+
+    [Theory]
+    [InlineData("Привет")]
+    [InlineData("Мир")]
+    [InlineData("Тестирование")]
+    public void DetectLanguage_PureCyrillicText_ReturnsRu(string text)
+    {
+        Assert.Equal(Language.Ru, _detector.DetectLanguage(text));
+    }
+
+    [Theory]
+    [InlineData("Hello")]
+    [InlineData("World")]
+    [InlineData("Testing")]
+    public void DetectLanguage_PureLatinText_ReturnsEn(string text)
+    {
+        Assert.Equal(Language.En, _detector.DetectLanguage(text));
+    }
+
+    [Fact]
+    public void DetectLanguage_EmptyString_ReturnsFallback()
+    {
+        Assert.Equal(Language.Ru, _detector.DetectLanguage(""));
+        Assert.Equal(Language.En, _detector.DetectLanguage("", Language.En));
+    }
+
+    [Fact]
+    public void DetectLanguage_WhitespaceOnly_ReturnsFallback()
+    {
+        Assert.Equal(Language.Ru, _detector.DetectLanguage("   \t\n"));
+    }
+
+    [Fact]
+    public void DetectLanguage_DigitsAndSymbolsOnly_ReturnsFallback()
+    {
+        Assert.Equal(Language.Ru, _detector.DetectLanguage("12345 !@#$%"));
+        Assert.Equal(Language.En, _detector.DetectLanguage("98765 &*()", Language.En));
+    }
+
+    [Fact]
+    public void DetectLanguage_EqualCyrillicAndLatinCounts_ReturnsFallback()
+    {
+        // "аб" = 2 Cyrillic, "cd" = 2 Latin → equal → fallback
+        Assert.Equal(Language.Ru, _detector.DetectLanguage("абcd"));
+        Assert.Equal(Language.En, _detector.DetectLanguage("абcd", Language.En));
+    }
+
+    [Theory]
+    [InlineData("ёжик")]
+    [InlineData("Ёлка")]
+    [InlineData("объём")]
+    public void DetectLanguage_TextWithYoCharacter_CountsAsCyrillic(string text)
+    {
+        Assert.Equal(Language.Ru, _detector.DetectLanguage(text));
+    }
+
+    [Fact]
+    public void DetectLanguage_MixedWithCyrillicDominant_ReturnsRu()
+    {
+        // "Привет world" — 6 Cyrillic, 5 Latin → Ru
+        Assert.Equal(Language.Ru, _detector.DetectLanguage("Привет world"));
+    }
+
+    [Fact]
+    public void DetectLanguage_MixedWithLatinDominant_ReturnsEn()
+    {
+        // "Hello мир" — 5 Latin, 3 Cyrillic → En
+        Assert.Equal(Language.En, _detector.DetectLanguage("Hello мир"));
+    }
 }
+
