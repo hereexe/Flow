@@ -6,6 +6,7 @@ using Flow.Application.Services;
 using Flow.Infrastructure.Settings;
 using Flow.Infrastructure.Translation;
 using Flow.Infrastructure.Translation.Offline;
+using Flow.Infrastructure.Translation.Online;
 using Flow.Infrastructure.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -41,6 +42,16 @@ public partial class App : System.Windows.Application
 
                 services.AddHttpClient<OpusCatSidecarProvider>();
                 services.AddSingleton<ITranslationProvider>(sp => sp.GetRequiredService<OpusCatSidecarProvider>());
+
+                // Register online translation providers
+                services.AddHttpClient<AzureTranslatorProvider>();
+                services.AddSingleton<ITranslationProvider>(sp => sp.GetRequiredService<AzureTranslatorProvider>());
+
+                services.AddHttpClient<DeepLProvider>();
+                services.AddSingleton<ITranslationProvider>(sp => sp.GetRequiredService<DeepLProvider>());
+
+                services.AddHttpClient<GoogleTranslateProvider>();
+                services.AddSingleton<ITranslationProvider>(sp => sp.GetRequiredService<GoogleTranslateProvider>());
 
                 services.AddSingleton<ITranslationProviderFactory, TranslationProviderFactory>();
 
