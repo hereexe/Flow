@@ -1,8 +1,10 @@
 using System;
 using System.Windows;
 using Flow.Application.Abstractions;
+using Flow.Application.Models;
 using Flow.Application.Services;
 using Flow.Infrastructure.Settings;
+using Flow.Infrastructure.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -20,9 +22,12 @@ public partial class App : System.Windows.Application
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // Register infrastructure stores
+                // Register infrastructure stores & services
                 services.AddSingleton<ISettingsStore, JsonSettingsStore>();
                 services.AddSingleton(sp => sp.GetRequiredService<ISettingsStore>().Load());
+
+                services.AddSingleton<IHotkeyService, GlobalHotkeyService>();
+                services.AddSingleton<IClipboardService, ClipboardAdapter>();
 
                 // Register application services
                 services.AddSingleton<IDirectionDetector, DirectionDetector>();
@@ -37,10 +42,40 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
         await _host.StartAsync();
+
+        RegisterGlobalHotkey();
+    }
+
+    private void RegisterGlobalHotkey()
+    {
+        var settings = Services.GetService<AppSettings>();
+        var hotkeyService = Services.GetService<IHotkeyService>();
+        if (settings != null && hotkeyService != null)
+        {
+            var combo = settings.HotkeyCombination;
+            bool success = hotkeyService.Register(combo, async () =>
+            {
+                using var scope = Services.CreateScope();
+                var orchestrator = scope.ServiceProvider.GetService<ITranslationOrchestrator>();
+                if (orchestrator != null)
+                {
+                    await orchestrator.ExecuteTranslationAsync();
+                }
+            });
+
+            if (!success)
+            {
+                var hud = Services.GetService<IHudStatusNotifier>();
+                hud?.ShowError($"Hotkey conflict: '{combo}' is already registered by another application.");
+            }
+        }
     }
 
     protected override async void OnExit(ExitEventArgs e)
     {
+        var hotkeyService = Services.GetService<IHotkeyService>();
+        hotkeyService?.Unregister();
+
         using (_host)
         {
             await _host.StopAsync();

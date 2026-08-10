@@ -61,4 +61,24 @@ public class ClipboardServiceTests
         Assert.True(service.Restored);
         Assert.Equal(initialData, service.GetCurrentData());
     }
+
+    [Fact]
+    public void RestoreSnapshot_WithFormatDictionaryEntries_RestoresOriginalDataObject()
+    {
+        // Arrange
+        var service = new FakeClipboardService();
+        var dictionaryEntries = new Dictionary<string, object>
+        {
+            { "Text", "Sample Text" },
+            { "HTML Format", "<p>Sample Text</p>" }
+        };
+        var snapshot = new ClipboardSnapshot { DataObject = dictionaryEntries };
+
+        // Act
+        service.RestoreSnapshot(snapshot);
+
+        // Assert
+        Assert.True(service.Restored);
+        Assert.Equal(dictionaryEntries, service.GetCurrentData());
+    }
 }
