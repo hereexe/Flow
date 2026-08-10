@@ -11,6 +11,7 @@ using Flow.Infrastructure.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Flow.Presentation.Services;
+using Flow.Presentation.Settings;
 
 namespace Flow.Presentation;
 
@@ -64,6 +65,14 @@ public partial class App : System.Windows.Application
                 services.AddSingleton<HudWindowManager>();
                 services.AddSingleton<IDirectionDetector, DirectionDetector>();
                 services.AddTransient<ITranslationOrchestrator, TranslationOrchestrator>();
+
+                // Register SettingsViewModel as transient (new instance per settings window open)
+                services.AddTransient<SettingsViewModel>(sp => new SettingsViewModel(
+                    sp.GetRequiredService<ISettingsStore>(),
+                    sp.GetRequiredService<ISecretStore>(),
+                    sp.GetRequiredService<IHotkeyService>(),
+                    sp.GetRequiredService<IHudStatusNotifier>(),
+                    CreateHotkeyPressedCallback()));
             })
             .Build();
     }
@@ -82,6 +91,24 @@ public partial class App : System.Windows.Application
         RegisterGlobalHotkey();
     }
 
+    /// <summary>
+    /// Creates the callback action invoked when the global translation hotkey is pressed.
+    /// This is extracted so it can be reused both at startup and by SettingsViewModel
+    /// after re-registering the hotkey.
+    /// </summary>
+    private static Action CreateHotkeyPressedCallback()
+    {
+        return async () =>
+        {
+            using var scope = Services.CreateScope();
+            var orchestrator = scope.ServiceProvider.GetService<ITranslationOrchestrator>();
+            if (orchestrator != null)
+            {
+                await orchestrator.ExecuteTranslationAsync();
+            }
+        };
+    }
+
     private void RegisterGlobalHotkey()
     {
         var settings = Services.GetService<AppSettings>();
@@ -89,15 +116,7 @@ public partial class App : System.Windows.Application
         if (settings != null && hotkeyService != null)
         {
             var combo = settings.HotkeyCombination;
-            bool success = hotkeyService.Register(combo, async () =>
-            {
-                using var scope = Services.CreateScope();
-                var orchestrator = scope.ServiceProvider.GetService<ITranslationOrchestrator>();
-                if (orchestrator != null)
-                {
-                    await orchestrator.ExecuteTranslationAsync();
-                }
-            });
+            bool success = hotkeyService.Register(combo, CreateHotkeyPressedCallback());
 
             if (!success)
             {
@@ -122,3 +141,4 @@ public partial class App : System.Windows.Application
         base.OnExit(e);
     }
 }
+

@@ -1,0 +1,90 @@
+<Window x:Class="Flow.Presentation.Settings.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:domain="clr-namespace:Flow.Domain;assembly=Flow.Domain"
+        Title="Flow Settings"
+        Width="420" Height="440"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True">
+    <Window.Resources>
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,8,0,4"/>
+        </Style>
+        <Style x:Key="FieldMargin" TargetType="FrameworkElement">
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" Text="Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
+
+        <!-- Settings Fields -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Primary Language -->
+                <TextBlock Text="Primary Language" Style="{StaticResource SectionLabel}"/>
+                <ComboBox ItemsSource="{Binding AvailableLanguages}"
+                          SelectedItem="{Binding PrimaryLanguage}"
+                          Style="{StaticResource FieldMargin}"/>
+
+                <!-- Secondary Language -->
+                <TextBlock Text="Secondary Language" Style="{StaticResource SectionLabel}"/>
+                <ComboBox ItemsSource="{Binding AvailableLanguages}"
+                          SelectedItem="{Binding SecondaryLanguage}"
+                          Style="{StaticResource FieldMargin}"/>
+
+                <!-- Hotkey -->
+                <TextBlock Text="Hotkey" Style="{StaticResource SectionLabel}"/>
+                <TextBox x:Name="HotkeyTextBox"
+                         Text="{Binding Hotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         IsReadOnly="True"
+                         IsReadOnlyCaretVisible="True"
+                         Style="{StaticResource FieldMargin}"
+                         PreviewKeyDown="HotkeyTextBox_PreviewKeyDown"
+                         GotFocus="HotkeyTextBox_GotFocus"
+                         LostFocus="HotkeyTextBox_LostFocus"
+                         ToolTip="Click and press a key combination to set the hotkey"/>
+
+                <!-- Translation Mode -->
+                <TextBlock Text="Translation Mode" Style="{StaticResource SectionLabel}"/>
+                <ComboBox ItemsSource="{Binding AvailableModes}"
+                          SelectedItem="{Binding Mode}"
+                          Style="{StaticResource FieldMargin}"/>
+
+                <!-- Online Provider -->
+                <TextBlock Text="Online Provider" Style="{StaticResource SectionLabel}"/>
+                <ComboBox ItemsSource="{Binding AvailableProviders}"
+                          SelectedItem="{Binding ActiveOnlineProvider}"
+                          Style="{StaticResource FieldMargin}"/>
+
+                <!-- API Key -->
+                <TextBlock Text="API Key" Style="{StaticResource SectionLabel}"/>
+                <TextBox Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource FieldMargin}"
+                         ToolTip="Enter the API key for the selected online provider"/>
+
+                <!-- Error Message -->
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="Red"
+                           TextWrapping="Wrap"
+                           Margin="0,8,0,0"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}, FallbackValue=Collapsed}"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Save" Command="{Binding SaveCommand}" Width="80" Margin="0,0,8,0" IsDefault="True"/>
+            <Button Content="Cancel" Command="{Binding CancelCommand}" Width="80" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
