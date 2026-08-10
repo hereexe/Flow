@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Flow.Application.Abstractions;
+using Flow.Application.Models;
 using Flow.Domain;
 
 namespace Flow.Application.Services;
@@ -12,9 +13,25 @@ namespace Flow.Application.Services;
 public class TranslationOrchestrator : ITranslationOrchestrator
 {
     private readonly IDirectionDetector _directionDetector;
-    private readonly ITranslationProvider _translationProvider;
     private readonly IClipboardService _clipboardService;
     private readonly IHudStatusNotifier _hudNotifier;
+    private readonly ITranslationProviderFactory? _providerFactory;
+    private readonly ISettingsRepository? _settingsRepository;
+    private readonly ITranslationProvider? _directProvider;
+
+    public TranslationOrchestrator(
+        IDirectionDetector directionDetector,
+        ITranslationProviderFactory providerFactory,
+        ISettingsRepository settingsRepository,
+        IClipboardService clipboardService,
+        IHudStatusNotifier hudNotifier)
+    {
+        _directionDetector = directionDetector ?? throw new ArgumentNullException(nameof(directionDetector));
+        _providerFactory = providerFactory ?? throw new ArgumentNullException(nameof(providerFactory));
+        _settingsRepository = settingsRepository ?? throw new ArgumentNullException(nameof(settingsRepository));
+        _clipboardService = clipboardService ?? throw new ArgumentNullException(nameof(clipboardService));
+        _hudNotifier = hudNotifier ?? throw new ArgumentNullException(nameof(hudNotifier));
+    }
 
     public TranslationOrchestrator(
         IDirectionDetector directionDetector,
@@ -23,7 +40,7 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         IHudStatusNotifier hudNotifier)
     {
         _directionDetector = directionDetector ?? throw new ArgumentNullException(nameof(directionDetector));
-        _translationProvider = translationProvider ?? throw new ArgumentNullException(nameof(translationProvider));
+        _directProvider = translationProvider ?? throw new ArgumentNullException(nameof(translationProvider));
         _clipboardService = clipboardService ?? throw new ArgumentNullException(nameof(clipboardService));
         _hudNotifier = hudNotifier ?? throw new ArgumentNullException(nameof(hudNotifier));
     }
@@ -31,6 +48,7 @@ public class TranslationOrchestrator : ITranslationOrchestrator
     /// <inheritdoc />
     public async Task<TranslationResult> ExecuteTranslationAsync(CancellationToken ct = default)
     {
+        _hudNotifier.ShowTranslating();
         var snapshot = _clipboardService.CaptureSnapshot();
         try
         {
@@ -38,13 +56,13 @@ public class TranslationOrchestrator : ITranslationOrchestrator
 
             if (string.IsNullOrWhiteSpace(sourceText))
             {
-                _clipboardService.RestoreSnapshot(snapshot);
+                _hudNotifier.Hide();
                 return TranslationResult.Fail("No text selected.");
             }
 
             var result = await TranslateTextAsync(sourceText, targetLanguage: null, ct);
 
-            if (result.Success)
+            if (result.Success && !string.IsNullOrWhiteSpace(result.TranslatedText))
             {
                 _hudNotifier.ShowSuccess();
                 await _clipboardService.ReplaceSelectedTextAsync(result.TranslatedText, ct);
@@ -78,23 +96,22 @@ public class TranslationOrchestrator : ITranslationOrchestrator
 
         if (targetLanguage.HasValue)
         {
-            // Explicit target: infer source as the opposite language
             target = targetLanguage.Value;
             source = target == Language.Ru ? Language.En : Language.Ru;
         }
         else
         {
-            // Auto-detect direction from text content
             (source, target) = _directionDetector.DetectDirection(text);
         }
 
         _hudNotifier.ShowTranslating();
 
         var stopwatch = Stopwatch.StartNew();
+        var provider = GetActiveProvider();
         try
         {
             var request = new TranslationRequest(text, source, target);
-            var result = await _translationProvider.TranslateAsync(request, ct);
+            var result = await provider.TranslateAsync(request, ct);
             stopwatch.Stop();
 
             return result with { ExecutionTimeMs = stopwatch.ElapsedMilliseconds };
@@ -102,7 +119,24 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         catch (Exception ex)
         {
             stopwatch.Stop();
-            return TranslationResult.Fail(ex.Message, _translationProvider.ProviderId, stopwatch.ElapsedMilliseconds);
+            return TranslationResult.Fail(ex.Message, provider.ProviderId, stopwatch.ElapsedMilliseconds);
         }
     }
+
+    private ITranslationProvider GetActiveProvider()
+    {
+        if (_directProvider != null)
+        {
+            return _directProvider;
+        }
+
+        if (_providerFactory != null && _settingsRepository != null)
+        {
+            var settings = _settingsRepository.LoadSettings();
+            return _providerFactory.GetActive(settings);
+        }
+
+        throw new InvalidOperationException("No translation provider or factory configured in orchestrator.");
+    }
 }
+

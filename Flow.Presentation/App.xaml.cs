@@ -56,18 +56,9 @@ public partial class App : System.Windows.Application
                 services.AddSingleton<ITranslationProviderFactory, TranslationProviderFactory>();
 
                 // Register application services
+                services.AddSingleton<IHudStatusNotifier, HudStatusNotifier>();
                 services.AddSingleton<IDirectionDetector, DirectionDetector>();
-                services.AddScoped<ITranslationOrchestrator>(sp =>
-                {
-                    var settings = sp.GetRequiredService<AppSettings>();
-                    var factory = sp.GetRequiredService<ITranslationProviderFactory>();
-                    var provider = factory.GetActive(settings);
-                    return new TranslationOrchestrator(
-                        sp.GetRequiredService<IDirectionDetector>(),
-                        provider,
-                        sp.GetRequiredService<IClipboardService>(),
-                        sp.GetRequiredService<IHudStatusNotifier>());
-                });
+                services.AddTransient<ITranslationOrchestrator, TranslationOrchestrator>();
             })
             .Build();
     }

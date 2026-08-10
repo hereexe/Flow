@@ -1,7 +1,9 @@
 using Flow.Application.Abstractions;
+using Flow.Application.Models;
 using Flow.Application.Services;
 using Flow.Domain;
 using Xunit;
+using ClipboardSnapshot = Flow.Application.Models.ClipboardSnapshot;
 
 namespace Flow.Application.Tests;
 
@@ -11,7 +13,7 @@ public class TranslationOrchestratorTests
 
     private class FakeTranslationProvider : ITranslationProvider
     {
-        public string ProviderId => "FakeProvider";
+        public string ProviderId { get; set; } = "FakeProvider";
         public bool ShouldFail { get; set; }
         public bool IsAvailable { get; set; } = true;
         public TranslationRequest? LastRequest { get; private set; }
@@ -34,15 +36,27 @@ public class TranslationOrchestratorTests
     {
         public string SelectedText { get; set; } = "";
         public string? ReplacedText { get; private set; }
+        public bool SnapshotCaptured { get; private set; }
+        public bool SnapshotRestored { get; private set; }
 
-        public Models.ClipboardSnapshot CaptureSnapshot() => new();
+        public ClipboardSnapshot CaptureSnapshot()
+        {
+            SnapshotCaptured = true;
+            return new ClipboardSnapshot();
+        }
+
         public Task<string> CaptureSelectedTextAsync(CancellationToken ct = default) => Task.FromResult(SelectedText);
+
         public Task ReplaceSelectedTextAsync(string translatedText, CancellationToken ct = default)
         {
             ReplacedText = translatedText;
             return Task.CompletedTask;
         }
-        public void RestoreSnapshot(Models.ClipboardSnapshot snapshot) { }
+
+        public void RestoreSnapshot(ClipboardSnapshot snapshot)
+        {
+            SnapshotRestored = true;
+        }
     }
 
     private class FakeHudNotifier : IHudStatusNotifier
@@ -55,6 +69,32 @@ public class TranslationOrchestratorTests
         public void ShowSuccess(string? message = null) { CurrentState = HudStatusState.Success; StateHistory.Add(CurrentState); }
         public void ShowError(string errorMessage) { CurrentState = HudStatusState.Error; StateHistory.Add(CurrentState); }
         public void Hide() { CurrentState = HudStatusState.Hidden; StateHistory.Add(CurrentState); }
+    }
+
+    private class FakeTranslationProviderFactory : ITranslationProviderFactory
+    {
+        public ITranslationProvider ActiveProvider { get; set; }
+
+        public FakeTranslationProviderFactory(ITranslationProvider activeProvider)
+        {
+            ActiveProvider = activeProvider;
+        }
+
+        public ITranslationProvider GetActive(AppSettings settings) => ActiveProvider;
+    }
+
+    private class FakeSettingsRepository : ISettingsRepository
+    {
+        public AppSettings Settings { get; set; } = new AppSettings();
+
+        public AppSettings LoadSettings() => Settings;
+        public Task<AppSettings> LoadSettingsAsync(CancellationToken ct = default) => Task.FromResult(Settings);
+        public void SaveSettings(AppSettings settings) => Settings = settings;
+        public Task SaveSettingsAsync(AppSettings settings, CancellationToken ct = default)
+        {
+            Settings = settings;
+            return Task.CompletedTask;
+        }
     }
 
     // --- TranslateTextAsync tests ---
@@ -113,14 +153,13 @@ public class TranslationOrchestratorTests
 
         var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
 
-        // Act — Russian text with explicit target=Ru (unusual but valid — tests that detector is bypassed)
+        // Act
         var result = await orchestrator.TranslateTextAsync("Привет мир", targetLanguage: Language.Ru);
 
         // Assert
         Assert.True(result.Success);
         Assert.NotNull(provider.LastRequest);
         Assert.Equal(Language.Ru, provider.LastRequest!.TargetLanguage);
-        // Source should be inferred as opposite of explicit target
         Assert.Equal(Language.En, provider.LastRequest!.SourceLanguage);
     }
 
@@ -160,5 +199,93 @@ public class TranslationOrchestratorTests
         Assert.False(result.Success);
         Assert.Equal("Provider service connection failed.", result.ErrorMessage);
         Assert.Equal("FakeProvider", result.ProviderId);
+    }
+
+    // --- ExecuteTranslationAsync tests ---
+
+    [Fact]
+    public async Task ExecuteTranslationAsync_EndToEndSuccess_ReplacesTextAndRestoresSnapshot()
+    {
+        // Arrange
+        var provider = new FakeTranslationProvider();
+        var clipboard = new FakeClipboardService { SelectedText = "Привет мир" };
+        var hud = new FakeHudNotifier();
+        var detector = new DirectionDetector();
+
+        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+
+        // Act
+        var result = await orchestrator.ExecuteTranslationAsync();
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal("[Translated] Привет мир", clipboard.ReplacedText);
+        Assert.True(clipboard.SnapshotCaptured);
+        Assert.True(clipboard.SnapshotRestored);
+        Assert.Equal(HudStatusState.Success, hud.CurrentState);
+    }
+
+    [Fact]
+    public async Task ExecuteTranslationAsync_EmptyTextSelected_AbortsWithoutReplacingTextAndRestoresSnapshot()
+    {
+        // Arrange
+        var provider = new FakeTranslationProvider();
+        var clipboard = new FakeClipboardService { SelectedText = "   " };
+        var hud = new FakeHudNotifier();
+        var detector = new DirectionDetector();
+
+        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+
+        // Act
+        var result = await orchestrator.ExecuteTranslationAsync();
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Null(clipboard.ReplacedText);
+        Assert.True(clipboard.SnapshotRestored);
+    }
+
+    [Fact]
+    public async Task ExecuteTranslationAsync_ProviderThrowsException_SkipsReplacementAndRestoresSnapshot()
+    {
+        // Arrange
+        var provider = new FakeTranslationProvider { ShouldFail = true };
+        var clipboard = new FakeClipboardService { SelectedText = "Hello world" };
+        var hud = new FakeHudNotifier();
+        var detector = new DirectionDetector();
+
+        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+
+        // Act
+        var result = await orchestrator.ExecuteTranslationAsync();
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Null(clipboard.ReplacedText);
+        Assert.True(clipboard.SnapshotRestored);
+        Assert.Equal(HudStatusState.Error, hud.CurrentState);
+    }
+
+    [Fact]
+    public async Task ExecuteTranslationAsync_WithFactoryAndSettings_ResolvesActiveProviderDynamically()
+    {
+        // Arrange
+        var provider = new FakeTranslationProvider { ProviderId = "DynamicProvider" };
+        var factory = new FakeTranslationProviderFactory(provider);
+        var settingsRepo = new FakeSettingsRepository();
+        var clipboard = new FakeClipboardService { SelectedText = "Dynamic Test" };
+        var hud = new FakeHudNotifier();
+        var detector = new DirectionDetector();
+
+        var orchestrator = new TranslationOrchestrator(detector, factory, settingsRepo, clipboard, hud);
+
+        // Act
+        var result = await orchestrator.ExecuteTranslationAsync();
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal("DynamicProvider", result.ProviderId);
+        Assert.Equal("[Translated] Dynamic Test", clipboard.ReplacedText);
+        Assert.True(clipboard.SnapshotRestored);
     }
 }
