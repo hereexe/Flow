@@ -1,0 +1,12 @@
+<Window x:Class="Flow.Presentation.Views.HudWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Flow HUD" Height="60" Width="300"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowActivated="False" ShowInTaskbar="False"
+        IsHitTestVisible="False">
+    <Border Background="#CC000000" CornerRadius="10" Padding="15,10">
+        <TextBlock x:Name="MessageText" Foreground="White" TextAlignment="Center" 
+                   VerticalAlignment="Center" FontSize="16" Text="Translating..."/>
+    </Border>
+</Window>

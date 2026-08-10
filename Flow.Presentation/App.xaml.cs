@@ -21,6 +21,7 @@ public partial class App : System.Windows.Application
 {
     private readonly IHost _host;
     private TrayIconManager? _trayIconManager;
+    private HudWindowManager? _hudWindowManager;
 
     public App()
     {
@@ -60,6 +61,7 @@ public partial class App : System.Windows.Application
                 // Register application services
                 services.AddSingleton<IHudStatusNotifier, HudStatusNotifier>();
                 services.AddSingleton<TrayIconManager>();
+                services.AddSingleton<HudWindowManager>();
                 services.AddSingleton<IDirectionDetector, DirectionDetector>();
                 services.AddTransient<ITranslationOrchestrator, TranslationOrchestrator>();
             })
@@ -75,6 +77,7 @@ public partial class App : System.Windows.Application
 
         // Initialize system tray icon
         _trayIconManager = Services.GetRequiredService<TrayIconManager>();
+        _hudWindowManager = Services.GetRequiredService<HudWindowManager>();
 
         RegisterGlobalHotkey();
     }
@@ -107,6 +110,7 @@ public partial class App : System.Windows.Application
     protected override async void OnExit(ExitEventArgs e)
     {
         _trayIconManager?.Dispose();
+        _hudWindowManager?.Dispose();
         
         var hotkeyService = Services.GetService<IHotkeyService>();
         hotkeyService?.Unregister();
