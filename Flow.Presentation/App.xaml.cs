@@ -22,8 +22,11 @@ public partial class App : System.Windows.Application
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // Register infrastructure stores & services
-                services.AddSingleton<ISettingsStore, JsonSettingsStore>();
+                // Register infrastructure stores & secret storage
+                services.AddSingleton<JsonSettingsStore>();
+                services.AddSingleton<ISettingsStore>(sp => sp.GetRequiredService<JsonSettingsStore>());
+                services.AddSingleton<ISettingsRepository>(sp => sp.GetRequiredService<JsonSettingsStore>());
+                services.AddSingleton<ISecretStore, CredentialManagerSecretStore>();
                 services.AddSingleton(sp => sp.GetRequiredService<ISettingsStore>().Load());
 
                 services.AddSingleton<IHotkeyService, GlobalHotkeyService>();

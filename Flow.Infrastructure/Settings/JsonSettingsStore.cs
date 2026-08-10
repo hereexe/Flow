@@ -6,13 +6,14 @@ using Flow.Application.Models;
 
 namespace Flow.Infrastructure.Settings;
 
-public class JsonSettingsStore : ISettingsStore
+public class JsonSettingsStore : ISettingsStore, ISettingsRepository
 {
     private readonly string _filePath;
     private readonly object _lock = new();
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         Converters = { new JsonStringEnumConverter() }
     };
 
@@ -45,21 +46,53 @@ public class JsonSettingsStore : ISettingsStore
 
                 var json = File.ReadAllText(_filePath);
                 var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
-                return settings ?? new AppSettings();
+                if (settings == null || !settings.Validate(out _))
+                {
+                    var fallbackSettings = new AppSettings();
+                    SaveInternal(fallbackSettings);
+                    return fallbackSettings;
+                }
+
+                return settings;
             }
             catch
             {
-                return new AppSettings();
+                var fallbackSettings = new AppSettings();
+                try
+                {
+                    SaveInternal(fallbackSettings);
+                }
+                catch
+                {
+                    // Ignore write failures on corrupt recovery fallback
+                }
+                return fallbackSettings;
             }
         }
     }
 
     public void Save(AppSettings settings)
     {
+        ArgumentNullException.ThrowIfNull(settings);
+
         lock (_lock)
         {
             SaveInternal(settings);
         }
+    }
+
+    public AppSettings LoadSettings() => Load();
+
+    public Task<AppSettings> LoadSettingsAsync(CancellationToken ct = default)
+    {
+        return Task.Run(Load, ct);
+    }
+
+    public void SaveSettings(AppSettings settings) => Save(settings);
+
+    public Task SaveSettingsAsync(AppSettings settings, CancellationToken ct = default)
+    {
+        return Task.Run(() => Save(settings), ct);
     }
 
     private void SaveInternal(AppSettings settings)
