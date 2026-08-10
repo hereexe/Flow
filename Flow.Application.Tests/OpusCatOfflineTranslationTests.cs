@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -214,5 +215,19 @@ public class OpusCatOfflineTranslationTests
         // Assert
         Assert.False(result.Success);
         Assert.Contains("код выхода: -1", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task OpusCatProcessManager_EnsureStartedAsync_ThrowsExecutableNotFoundWithNormalizedPath()
+    {
+        // Arrange
+        var options = new OpusCatOptions { ExecutablePath = "OpusCat/NonExistentEngine.exe" };
+        var httpClient = new HttpClient();
+        var manager = new OpusCatProcessManager(options, httpClient);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<OpusCatExecutableNotFoundException>(() => manager.EnsureStartedAsync());
+        Assert.DoesNotContain("/", ex.ExecutablePath);
+        Assert.EndsWith(Path.Combine("OpusCat", "NonExistentEngine.exe"), ex.ExecutablePath);
     }
 }

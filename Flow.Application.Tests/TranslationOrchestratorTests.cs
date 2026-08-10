@@ -97,6 +97,17 @@ public class TranslationOrchestratorTests
         }
     }
 
+    private static TranslationOrchestrator CreateOrchestrator(
+        IDirectionDetector detector,
+        ITranslationProvider provider,
+        IClipboardService clipboard,
+        IHudStatusNotifier hud)
+    {
+        var factory = new FakeTranslationProviderFactory(provider);
+        var settingsRepo = new FakeSettingsRepository();
+        return new TranslationOrchestrator(detector, factory, settingsRepo, clipboard, hud);
+    }
+
     // --- TranslateTextAsync tests ---
 
     [Fact]
@@ -108,7 +119,7 @@ public class TranslationOrchestratorTests
         var hud = new FakeHudNotifier();
         var detector = new DirectionDetector();
 
-        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud);
 
         // Act — Russian text, no explicit target → should auto-detect RU→EN
         var result = await orchestrator.TranslateTextAsync("Привет мир");
@@ -130,7 +141,7 @@ public class TranslationOrchestratorTests
         var hud = new FakeHudNotifier();
         var detector = new DirectionDetector();
 
-        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud);
 
         // Act — English text, no explicit target → should auto-detect EN→RU
         var result = await orchestrator.TranslateTextAsync("Hello world");
@@ -151,7 +162,7 @@ public class TranslationOrchestratorTests
         var hud = new FakeHudNotifier();
         var detector = new DirectionDetector();
 
-        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud);
 
         // Act
         var result = await orchestrator.TranslateTextAsync("Привет мир", targetLanguage: Language.Ru);
@@ -172,7 +183,7 @@ public class TranslationOrchestratorTests
         var hud = new FakeHudNotifier();
         var detector = new DirectionDetector();
 
-        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud);
 
         // Act
         await orchestrator.TranslateTextAsync("Hello");
@@ -190,7 +201,7 @@ public class TranslationOrchestratorTests
         var hud = new FakeHudNotifier();
         var detector = new DirectionDetector();
 
-        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud);
 
         // Act
         var result = await orchestrator.TranslateTextAsync("Hello world");
@@ -212,7 +223,7 @@ public class TranslationOrchestratorTests
         var hud = new FakeHudNotifier();
         var detector = new DirectionDetector();
 
-        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud);
 
         // Act
         var result = await orchestrator.ExecuteTranslationAsync();
@@ -234,7 +245,7 @@ public class TranslationOrchestratorTests
         var hud = new FakeHudNotifier();
         var detector = new DirectionDetector();
 
-        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud);
 
         // Act
         var result = await orchestrator.ExecuteTranslationAsync();
@@ -254,7 +265,7 @@ public class TranslationOrchestratorTests
         var hud = new FakeHudNotifier();
         var detector = new DirectionDetector();
 
-        var orchestrator = new TranslationOrchestrator(detector, provider, clipboard, hud);
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud);
 
         // Act
         var result = await orchestrator.ExecuteTranslationAsync();

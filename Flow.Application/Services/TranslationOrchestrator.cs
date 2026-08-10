@@ -15,9 +15,8 @@ public class TranslationOrchestrator : ITranslationOrchestrator
     private readonly IDirectionDetector _directionDetector;
     private readonly IClipboardService _clipboardService;
     private readonly IHudStatusNotifier _hudNotifier;
-    private readonly ITranslationProviderFactory? _providerFactory;
-    private readonly ISettingsRepository? _settingsRepository;
-    private readonly ITranslationProvider? _directProvider;
+    private readonly ITranslationProviderFactory _providerFactory;
+    private readonly ISettingsRepository _settingsRepository;
 
     public TranslationOrchestrator(
         IDirectionDetector directionDetector,
@@ -29,18 +28,6 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         _directionDetector = directionDetector ?? throw new ArgumentNullException(nameof(directionDetector));
         _providerFactory = providerFactory ?? throw new ArgumentNullException(nameof(providerFactory));
         _settingsRepository = settingsRepository ?? throw new ArgumentNullException(nameof(settingsRepository));
-        _clipboardService = clipboardService ?? throw new ArgumentNullException(nameof(clipboardService));
-        _hudNotifier = hudNotifier ?? throw new ArgumentNullException(nameof(hudNotifier));
-    }
-
-    public TranslationOrchestrator(
-        IDirectionDetector directionDetector,
-        ITranslationProvider translationProvider,
-        IClipboardService clipboardService,
-        IHudStatusNotifier hudNotifier)
-    {
-        _directionDetector = directionDetector ?? throw new ArgumentNullException(nameof(directionDetector));
-        _directProvider = translationProvider ?? throw new ArgumentNullException(nameof(translationProvider));
         _clipboardService = clipboardService ?? throw new ArgumentNullException(nameof(clipboardService));
         _hudNotifier = hudNotifier ?? throw new ArgumentNullException(nameof(hudNotifier));
     }
@@ -125,18 +112,8 @@ public class TranslationOrchestrator : ITranslationOrchestrator
 
     private ITranslationProvider GetActiveProvider()
     {
-        if (_directProvider != null)
-        {
-            return _directProvider;
-        }
-
-        if (_providerFactory != null && _settingsRepository != null)
-        {
-            var settings = _settingsRepository.LoadSettings();
-            return _providerFactory.GetActive(settings);
-        }
-
-        throw new InvalidOperationException("No translation provider or factory configured in orchestrator.");
+        var settings = _settingsRepository.LoadSettings();
+        return _providerFactory.GetActive(settings);
     }
 }
 

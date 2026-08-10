@@ -175,9 +175,37 @@ public class OpusCatProcessManager : IOpusCatProcessManager
     {
         if (Path.IsPathRooted(executablePath))
         {
-            return executablePath;
+            return Path.GetFullPath(executablePath);
         }
-        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executablePath);
+
+        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        var candidates = new List<string>
+        {
+            Path.GetFullPath(Path.Combine(baseDir, executablePath)),
+            Path.GetFullPath(Path.Combine(baseDir, Path.GetFileName(executablePath)))
+        };
+
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (!string.IsNullOrEmpty(localAppData))
+        {
+            candidates.Add(Path.GetFullPath(Path.Combine(localAppData, "OpusCat", Path.GetFileName(executablePath))));
+        }
+
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        if (!string.IsNullOrEmpty(programFiles))
+        {
+            candidates.Add(Path.GetFullPath(Path.Combine(programFiles, "OpusCat", Path.GetFileName(executablePath))));
+        }
+
+        foreach (var candidate in candidates)
+        {
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return candidates[0];
     }
 
     private static bool IsPortInUse(int port)
