@@ -10,6 +10,7 @@ using Flow.Infrastructure.Translation.Online;
 using Flow.Infrastructure.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Flow.Presentation.Services;
 
 namespace Flow.Presentation;
 
@@ -19,6 +20,7 @@ namespace Flow.Presentation;
 public partial class App : System.Windows.Application
 {
     private readonly IHost _host;
+    private TrayIconManager? _trayIconManager;
 
     public App()
     {
@@ -57,6 +59,7 @@ public partial class App : System.Windows.Application
 
                 // Register application services
                 services.AddSingleton<IHudStatusNotifier, HudStatusNotifier>();
+                services.AddSingleton<TrayIconManager>();
                 services.AddSingleton<IDirectionDetector, DirectionDetector>();
                 services.AddTransient<ITranslationOrchestrator, TranslationOrchestrator>();
             })
@@ -69,6 +72,9 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
         await _host.StartAsync();
+
+        // Initialize system tray icon
+        _trayIconManager = Services.GetRequiredService<TrayIconManager>();
 
         RegisterGlobalHotkey();
     }
@@ -100,6 +106,8 @@ public partial class App : System.Windows.Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
+        _trayIconManager?.Dispose();
+        
         var hotkeyService = Services.GetService<IHotkeyService>();
         hotkeyService?.Unregister();
 
