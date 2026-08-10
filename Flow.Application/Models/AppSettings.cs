@@ -8,7 +8,6 @@ public class AppSettings
     public string Hotkey { get; set; } = "Ctrl+Shift+T";
     public Language PrimaryLanguage { get; set; } = Language.En;
     public Language SecondaryLanguage { get; set; } = Language.Ru;
-    public TranslationMode Mode { get; set; } = TranslationMode.Online;
     public string ActiveOnlineProvider { get; set; } = ProviderIdentifiers.Azure;
 
     [JsonIgnore]
@@ -32,7 +31,7 @@ public class AppSettings
             validationErrors.Add("Primary and secondary languages must be different.");
         }
 
-        if (Mode == TranslationMode.Online && !ProviderIdentifiers.IsValidOnlineProvider(ActiveOnlineProvider))
+        if (!ProviderIdentifiers.IsValidOnlineProvider(ActiveOnlineProvider))
         {
             validationErrors.Add($"Invalid online provider: '{ActiveOnlineProvider}'. Supported providers: Azure, DeepL, Google.");
         }

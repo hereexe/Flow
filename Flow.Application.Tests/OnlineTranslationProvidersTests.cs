@@ -301,7 +301,6 @@ public class OnlineTranslationProvidersTests
         var factory = new TranslationProviderFactory(new ITranslationProvider[] { azure, deepl, google });
         var settings = new AppSettings
         {
-            Mode = TranslationMode.Online,
             ActiveOnlineProvider = targetProvider
         };
 

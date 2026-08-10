@@ -41,7 +41,6 @@ public class SettingsAndSecretsTests
         // Arrange
         var settings = new AppSettings
         {
-            Mode = TranslationMode.Online,
             ActiveOnlineProvider = "UnsupportedProvider"
         };
 

@@ -1,6 +1,5 @@
 using Flow.Application.Abstractions;
 using Flow.Application.Models;
-using Flow.Domain;
 
 namespace Flow.Infrastructure.Translation;
 
@@ -16,16 +15,6 @@ public class TranslationProviderFactory : ITranslationProviderFactory
     public ITranslationProvider GetActive(AppSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-
-        if (settings.Mode == TranslationMode.Offline)
-        {
-            var offlineProvider = _providers.FirstOrDefault(p => p.ProviderId == ProviderIdentifiers.OpusCat);
-            if (offlineProvider == null)
-            {
-                throw new InvalidOperationException($"Offline provider '{ProviderIdentifiers.OpusCat}' is not registered in service collection.");
-            }
-            return offlineProvider;
-        }
 
         var onlineProvider = _providers.FirstOrDefault(p => p.ProviderId.Equals(settings.ActiveOnlineProvider, StringComparison.OrdinalIgnoreCase));
         if (onlineProvider == null)

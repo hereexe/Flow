@@ -52,7 +52,6 @@ public class JsonSettingsStoreTests : IDisposable
             Hotkey = "Alt+F10",
             PrimaryLanguage = Language.Ru,
             SecondaryLanguage = Language.En,
-            Mode = TranslationMode.Online,
             ActiveOnlineProvider = ProviderIdentifiers.DeepL
         };
 
@@ -64,7 +63,6 @@ public class JsonSettingsStoreTests : IDisposable
         Assert.Equal("Alt+F10", loaded.Hotkey);
         Assert.Equal(Language.Ru, loaded.PrimaryLanguage);
         Assert.Equal(Language.En, loaded.SecondaryLanguage);
-        Assert.Equal(TranslationMode.Online, loaded.Mode);
         Assert.Equal(ProviderIdentifiers.DeepL, loaded.ActiveOnlineProvider);
     }
 

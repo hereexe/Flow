@@ -3,7 +3,7 @@ using Flow.Domain;
 namespace Flow.Application.Abstractions;
 
 /// <summary>
-/// Abstraction for offline (OpusCat) and online (Azure, DeepL, Google) translation engine adapters.
+/// Abstraction for online (Azure, DeepL, Google) translation engine adapters.
 /// </summary>
 public interface ITranslationProvider
 {

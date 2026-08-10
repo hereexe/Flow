@@ -54,12 +54,6 @@
                          LostFocus="HotkeyTextBox_LostFocus"
                          ToolTip="Click and press a key combination to set the hotkey"/>
 
-                <!-- Translation Mode -->
-                <TextBlock Text="Translation Mode" Style="{StaticResource SectionLabel}"/>
-                <ComboBox ItemsSource="{Binding AvailableModes}"
-                          SelectedItem="{Binding Mode}"
-                          Style="{StaticResource FieldMargin}"/>
-
                 <!-- Online Provider -->
                 <TextBlock Text="Online Provider" Style="{StaticResource SectionLabel}"/>
                 <ComboBox ItemsSource="{Binding AvailableProviders}"

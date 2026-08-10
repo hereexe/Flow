@@ -43,9 +43,6 @@ public partial class SettingsViewModel : ObservableObject
     private string _hotkey = string.Empty;
 
     [ObservableProperty]
-    private TranslationMode _mode;
-
-    [ObservableProperty]
     private string _activeOnlineProvider = ProviderIdentifiers.Azure;
 
     [ObservableProperty]
@@ -65,8 +62,6 @@ public partial class SettingsViewModel : ObservableObject
     public bool SavedSuccessfully { get; private set; }
 
     public IReadOnlyList<Language> AvailableLanguages { get; } = Enum.GetValues<Language>();
-
-    public IReadOnlyList<TranslationMode> AvailableModes { get; } = Enum.GetValues<TranslationMode>();
 
     public IReadOnlyList<string> AvailableProviders { get; } = new[]
     {
@@ -93,7 +88,6 @@ public partial class SettingsViewModel : ObservableObject
         _primaryLanguage = settings.PrimaryLanguage;
         _secondaryLanguage = settings.SecondaryLanguage;
         _hotkey = settings.Hotkey;
-        _mode = settings.Mode;
         _activeOnlineProvider = settings.ActiveOnlineProvider;
         _originalHotkey = settings.Hotkey;
 
@@ -121,7 +115,6 @@ public partial class SettingsViewModel : ObservableObject
             Hotkey = Hotkey,
             PrimaryLanguage = PrimaryLanguage,
             SecondaryLanguage = SecondaryLanguage,
-            Mode = Mode,
             ActiveOnlineProvider = ActiveOnlineProvider
         };
 

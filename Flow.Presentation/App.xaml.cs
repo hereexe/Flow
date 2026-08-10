@@ -5,7 +5,6 @@ using Flow.Application.Models;
 using Flow.Application.Services;
 using Flow.Infrastructure.Settings;
 using Flow.Infrastructure.Translation;
-using Flow.Infrastructure.Translation.Offline;
 using Flow.Infrastructure.Translation.Online;
 using Flow.Infrastructure.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,14 +37,6 @@ public partial class App : System.Windows.Application
 
                 services.AddSingleton<IHotkeyService, GlobalHotkeyService>();
                 services.AddSingleton<IClipboardService, ClipboardAdapter>();
-
-                // Register offline translation process manager & provider
-                services.AddSingleton<OpusCatOptions>();
-                services.AddHttpClient<OpusCatProcessManager>();
-                services.AddSingleton<IOpusCatProcessManager>(sp => sp.GetRequiredService<OpusCatProcessManager>());
-
-                services.AddHttpClient<OpusCatSidecarProvider>();
-                services.AddSingleton<ITranslationProvider>(sp => sp.GetRequiredService<OpusCatSidecarProvider>());
 
                 // Register online translation providers
                 services.AddHttpClient<AzureTranslatorProvider>();
