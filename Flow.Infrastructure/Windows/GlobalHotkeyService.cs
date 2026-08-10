@@ -93,6 +93,13 @@ public class GlobalHotkeyService : IHotkeyService, IDisposable
         if (_windowHandle != IntPtr.Zero)
             return;
 
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher != null && !dispatcher.CheckAccess())
+        {
+            dispatcher.Invoke(EnsureWindowHandle);
+            return;
+        }
+
         // Try to use the main application window first
         var mainWindow = System.Windows.Application.Current?.MainWindow;
         if (mainWindow != null)

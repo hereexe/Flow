@@ -84,11 +84,14 @@ public partial class App : System.Windows.Application
         base.OnStartup(e);
         await _host.StartAsync();
 
-        // Initialize system tray icon
-        _trayIconManager = Services.GetRequiredService<TrayIconManager>();
-        _hudWindowManager = Services.GetRequiredService<HudWindowManager>();
+        Dispatcher.Invoke(() =>
+        {
+            // Initialize system tray icon and HUD window manager on UI thread
+            _trayIconManager = Services.GetRequiredService<TrayIconManager>();
+            _hudWindowManager = Services.GetRequiredService<HudWindowManager>();
 
-        RegisterGlobalHotkey();
+            RegisterGlobalHotkey();
+        });
     }
 
     /// <summary>
@@ -98,14 +101,17 @@ public partial class App : System.Windows.Application
     /// </summary>
     private static Action CreateHotkeyPressedCallback()
     {
-        return async () =>
+        return () =>
         {
-            using var scope = Services.CreateScope();
-            var orchestrator = scope.ServiceProvider.GetService<ITranslationOrchestrator>();
-            if (orchestrator != null)
+            System.Windows.Application.Current?.Dispatcher.InvokeAsync(async () =>
             {
-                await orchestrator.ExecuteTranslationAsync();
-            }
+                using var scope = Services.CreateScope();
+                var orchestrator = scope.ServiceProvider.GetService<ITranslationOrchestrator>();
+                if (orchestrator != null)
+                {
+                    await orchestrator.ExecuteTranslationAsync();
+                }
+            });
         };
     }
 

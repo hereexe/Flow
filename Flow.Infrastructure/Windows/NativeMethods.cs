@@ -67,4 +67,17 @@ internal static class NativeMethods
 
         throw new ArgumentException($"Unable to resolve virtual key for '{key}'.", nameof(key));
     }
+
+    [DllImport("user32.dll")]
+    internal static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+    [DllImport("user32.dll")]
+    internal static extern short GetAsyncKeyState(int vKey);
+
+    internal const int KEYEVENTF_KEYUP = 0x0002;
+    internal const byte VK_CONTROL = 0x11;
+    internal const byte VK_SHIFT = 0x10;
+    internal const byte VK_MENU = 0x12; // Alt
+    internal const byte VK_LWIN = 0x5B;
+    internal const byte VK_RWIN = 0x5C;
 }

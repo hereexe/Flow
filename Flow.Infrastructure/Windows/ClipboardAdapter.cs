@@ -61,11 +61,11 @@ public class ClipboardAdapter : IClipboardService
     /// <inheritdoc />
     public async Task<string> CaptureSelectedTextAsync(CancellationToken ct = default)
     {
+        // Clear clipboard first to ensure we only capture newly copied text
+        await DispatchOnStaAsync(ClearClipboardWithRetry);
+
         // Simulate Ctrl+C to copy selected text to clipboard
-        await DispatchOnStaAsync(() =>
-        {
-            System.Windows.Forms.SendKeys.SendWait("^c");
-        });
+        await DispatchOnStaAsync(SendCopyCommand);
 
         // Wait for the clipboard to update
         await Task.Delay(ClipboardDelayMs, ct);
@@ -96,10 +96,48 @@ public class ClipboardAdapter : IClipboardService
         await Task.Delay(PasteDelayMs, ct);
 
         // Simulate Ctrl+V to paste
-        await DispatchOnStaAsync(() =>
-        {
-            System.Windows.Forms.SendKeys.SendWait("^v");
-        });
+        await DispatchOnStaAsync(SendPasteCommand);
+
+        // Wait for the target application to process the Ctrl+V and read the clipboard
+        // before we allow the orchestrator to restore the old clipboard snapshot!
+        await Task.Delay(150, ct); 
+    }
+
+    private static void ReleaseModifiers()
+    {
+        // Release common modifiers that might be held down by the user
+        if ((NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0)
+            NativeMethods.keybd_event(NativeMethods.VK_SHIFT, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
+        if ((NativeMethods.GetAsyncKeyState(NativeMethods.VK_CONTROL) & 0x8000) != 0)
+            NativeMethods.keybd_event(NativeMethods.VK_CONTROL, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
+        if ((NativeMethods.GetAsyncKeyState(NativeMethods.VK_MENU) & 0x8000) != 0)
+            NativeMethods.keybd_event(NativeMethods.VK_MENU, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
+        if ((NativeMethods.GetAsyncKeyState(NativeMethods.VK_LWIN) & 0x8000) != 0)
+            NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
+        if ((NativeMethods.GetAsyncKeyState(NativeMethods.VK_RWIN) & 0x8000) != 0)
+            NativeMethods.keybd_event(NativeMethods.VK_RWIN, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
+    }
+
+    private static void SendCopyCommand()
+    {
+        ReleaseModifiers();
+        Thread.Sleep(10);
+        const byte VK_C = 0x43;
+        NativeMethods.keybd_event(NativeMethods.VK_CONTROL, 0, 0, UIntPtr.Zero);
+        NativeMethods.keybd_event(VK_C, 0, 0, UIntPtr.Zero);
+        NativeMethods.keybd_event(VK_C, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
+        NativeMethods.keybd_event(NativeMethods.VK_CONTROL, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
+    }
+
+    private static void SendPasteCommand()
+    {
+        ReleaseModifiers();
+        Thread.Sleep(10);
+        const byte VK_V = 0x56;
+        NativeMethods.keybd_event(NativeMethods.VK_CONTROL, 0, 0, UIntPtr.Zero);
+        NativeMethods.keybd_event(VK_V, 0, 0, UIntPtr.Zero);
+        NativeMethods.keybd_event(VK_V, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
+        NativeMethods.keybd_event(NativeMethods.VK_CONTROL, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
     }
 
     /// <inheritdoc />
@@ -143,6 +181,26 @@ public class ClipboardAdapter : IClipboardService
             catch (ExternalException) when (attempt < MaxRetries - 1)
             {
                 Thread.Sleep(RetryDelaysMs[attempt]);
+            }
+        }
+    }
+
+    private static void ClearClipboardWithRetry()
+    {
+        for (int attempt = 0; attempt < MaxRetries; attempt++)
+        {
+            try
+            {
+                System.Windows.Clipboard.Clear();
+                return;
+            }
+            catch (ExternalException) when (attempt < MaxRetries - 1)
+            {
+                Thread.Sleep(RetryDelaysMs[attempt]);
+            }
+            catch
+            {
+                // Fallback ignore
             }
         }
     }
