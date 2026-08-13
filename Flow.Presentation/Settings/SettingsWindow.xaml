@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:domain="clr-namespace:Flow.Domain;assembly=Flow.Domain"
         Title="Flow Settings"
-        Width="480" Height="680"
+        Width="480" SizeToContent="Height"
         ResizeMode="NoResize"
         WindowStyle="None"
         WindowStartupLocation="CenterScreen"
@@ -209,9 +209,39 @@
                 <Grid>
                     <TextBlock Text="Flow Settings" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextMainBrush}" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Ellipse Width="12" Height="12" Fill="#475569" Margin="0,0,8,0"/>
-                        <Ellipse Width="12" Height="12" Fill="#475569" Margin="0,0,8,0"/>
-                        <Ellipse Width="12" Height="12" Fill="#ef4444" Cursor="Hand" MouseLeftButtonDown="CloseButton_MouseLeftButtonDown"/>
+                        <Button Content="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="32" Height="32" Margin="0,0,4,0"
+                                Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextMainBrush}"
+                                Cursor="Hand" Click="MinimizeButton_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#1AFFFFFF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="32" Height="32" 
+                                Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextMainBrush}"
+                                Cursor="Hand" Click="CloseButton_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#E81123"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -268,8 +298,78 @@
 
                     <StackPanel Margin="0,0,0,20">
                         <TextBlock Text="API Key" Style="{StaticResource SectionLabel}"/>
-                        <TextBox Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 ToolTip="Enter the API key for the selected online provider"/>
+                        <Grid>
+                            <PasswordBox x:Name="ApiPasswordBox" 
+                                         ToolTip="Enter the API key for the selected online provider"
+                                         Padding="0,0,40,0"
+                                         PasswordChar="•"
+                                         PasswordChanged="ApiPasswordBox_PasswordChanged">
+                                <PasswordBox.Style>
+                                    <Style TargetType="PasswordBox">
+                                        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextMainBrush}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                        <Setter Property="FontSize" Value="14"/>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="PasswordBox">
+                                                    <Border Background="{TemplateBinding Background}" 
+                                                            BorderBrush="{TemplateBinding BorderBrush}" 
+                                                            BorderThickness="{TemplateBinding BorderThickness}" 
+                                                            CornerRadius="6"
+                                                            Padding="16,12">
+                                                        <ScrollViewer x:Name="PART_ContentHost"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsApiKeyVisible}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </PasswordBox.Style>
+                            </PasswordBox>
+
+                            <TextBox x:Name="ApiTextBox" 
+                                     Text="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Enter the API key for the selected online provider"
+                                     Padding="0,0,40,0">
+                                <TextBox.Style>
+                                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsApiKeyVisible}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
+
+                            <ToggleButton IsChecked="{Binding IsApiKeyVisible}" 
+                                          HorizontalAlignment="Right" VerticalAlignment="Center" 
+                                          Margin="0,0,8,0" Width="32" Height="32" 
+                                          Background="Transparent" BorderThickness="0" Cursor="Hand">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent">
+                                            <TextBlock Text="&#xE890;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
+                                                       Foreground="{DynamicResource TextMutedBrush}" 
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Icon"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="Icon" Property="Opacity" Value="0.5"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                        </Grid>
                         <TextBlock Text="Key is safely stored in Windows Credential Manager" Style="{StaticResource MutedText}" Margin="0,4,0,0"/>
                     </StackPanel>
 
@@ -290,7 +390,19 @@
                                Margin="0,0,0,16"
                                Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}, FallbackValue=Collapsed}"/>
 
-                    <Button Content="Save Settings" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" IsDefault="True"/>
+                    <Button Command="{Binding SaveCommand}" IsDefault="True">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                                <Setter Property="Content" Value="Save Settings" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSaved}" Value="True">
+                                        <Setter Property="Content" Value="Saved!" />
+                                        <Setter Property="Background" Value="#10B981" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </Border>
         </Grid>

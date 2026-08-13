@@ -15,6 +15,8 @@ namespace Flow.Presentation.Settings;
 /// </summary>
 public partial class SettingsWindow : Window
 {
+    private bool _isSyncingApiKey = false;
+
     public SettingsWindow(SettingsViewModel viewModel)
     {
         // Add the converter to window resources before InitializeComponent uses them
@@ -24,6 +26,8 @@ public partial class SettingsWindow : Window
         DataContext = viewModel;
 
         ApplyTheme(viewModel.SelectedTheme);
+        
+        ApiPasswordBox.Password = viewModel.ApiKey;
 
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
 
@@ -37,6 +41,15 @@ public partial class SettingsWindow : Window
         if (e.PropertyName == nameof(SettingsViewModel.SelectedTheme) && DataContext is SettingsViewModel vm)
         {
             ApplyTheme(vm.SelectedTheme);
+        }
+        else if (e.PropertyName == nameof(SettingsViewModel.ApiKey) && DataContext is SettingsViewModel vm2)
+        {
+            if (!_isSyncingApiKey)
+            {
+                _isSyncingApiKey = true;
+                ApiPasswordBox.Password = vm2.ApiKey;
+                _isSyncingApiKey = false;
+            }
         }
     }
 
@@ -92,9 +105,24 @@ public partial class SettingsWindow : Window
             this.DragMove();
     }
 
-    private void CloseButton_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void ApiPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_isSyncingApiKey && DataContext is SettingsViewModel vm)
+        {
+            _isSyncingApiKey = true;
+            vm.ApiKey = ApiPasswordBox.Password;
+            _isSyncingApiKey = false;
+        }
     }
 
     private void HotkeyTextBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

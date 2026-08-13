@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Flow.Application.Abstractions;
@@ -61,6 +62,12 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _showHud;
 
+    [ObservableProperty]
+    private bool _isSaved;
+
+    [ObservableProperty]
+    private bool _isApiKeyVisible;
+
     /// <summary>
     /// Raised when the ViewModel wants the window to close.
     /// </summary>
@@ -121,8 +128,31 @@ public partial class SettingsViewModel : ObservableObject
         RefreshApiKeyPlaceholder();
     }
 
+    partial void OnIsApiKeyVisibleChanged(bool value)
+    {
+        if (value)
+        {
+            if (ApiKey == MaskedPlaceholder)
+            {
+                var secret = _secretStore.GetSecret(ActiveOnlineProvider);
+                if (secret != null)
+                {
+                    ApiKey = secret;
+                }
+            }
+        }
+        else
+        {
+            var secret = _secretStore.GetSecret(ActiveOnlineProvider);
+            if (secret != null && ApiKey == secret)
+            {
+                ApiKey = MaskedPlaceholder;
+            }
+        }
+    }
+
     [RelayCommand]
-    private void Save()
+    private async Task Save()
     {
         ErrorMessage = string.Empty;
 
@@ -172,7 +202,10 @@ public partial class SettingsViewModel : ObservableObject
             _startupService.Disable();
 
         SavedSuccessfully = true;
-        CloseRequested?.Invoke();
+        IsSaved = true;
+        
+        await Task.Delay(2000);
+        IsSaved = false;
     }
 
     [RelayCommand]
