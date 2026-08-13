@@ -9,12 +9,14 @@ namespace Flow.Presentation.Services;
 public class HudWindowManager : IDisposable
 {
     private readonly IHudStatusNotifier _statusNotifier;
+    private readonly ISettingsStore _settingsStore;
     private HudWindow? _hudWindow;
     private bool _disposed;
 
-    public HudWindowManager(IHudStatusNotifier statusNotifier)
+    public HudWindowManager(IHudStatusNotifier statusNotifier, ISettingsStore settingsStore)
     {
         _statusNotifier = statusNotifier;
+        _settingsStore = settingsStore;
         _statusNotifier.StatusChanged += OnStatusChanged;
     }
 
@@ -29,16 +31,19 @@ public class HudWindowManager : IDisposable
                 System.Windows.Application.Current.MainWindow.Closed += (s, args) => _hudWindow.Close();
             }
 
+            var settings = _settingsStore.Load();
+            _hudWindow.ApplyThemeColors(settings.Theme);
+
             switch (e.State)
             {
                 case HudStatusState.Translating:
-                    _hudWindow.ShowStatus("Translating...", null, new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0x00, 0x00, 0x00)));
+                    _hudWindow.ShowTranslating();
                     break;
                 case HudStatusState.Success:
-                    _hudWindow.ShowStatus("Ready", TimeSpan.FromSeconds(1), new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0x00, 0x55, 0x00)));
+                    _hudWindow.ShowSuccess();
                     break;
                 case HudStatusState.Error:
-                    _hudWindow.ShowStatus(e.Message ?? "Error", TimeSpan.FromSeconds(4), new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0x88, 0x00, 0x00)));
+                    _hudWindow.ShowError(e.Message ?? "Error");
                     break;
                 case HudStatusState.Hidden:
                 case HudStatusState.Canceled:

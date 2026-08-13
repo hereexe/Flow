@@ -20,6 +20,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ISecretStore _secretStore;
     private readonly IHotkeyService _hotkeyService;
     private readonly IHudStatusNotifier _hudStatusNotifier;
+    private readonly IStartupService _startupService;
 
     /// <summary>
     /// Stores the original hotkey string loaded at window open,
@@ -51,6 +52,15 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _errorMessage = string.Empty;
 
+    [ObservableProperty]
+    private AppTheme _selectedTheme;
+
+    [ObservableProperty]
+    private bool _launchWithWindows;
+
+    [ObservableProperty]
+    private bool _showHud;
+
     /// <summary>
     /// Raised when the ViewModel wants the window to close.
     /// </summary>
@@ -62,6 +72,7 @@ public partial class SettingsViewModel : ObservableObject
     public bool SavedSuccessfully { get; private set; }
 
     public IReadOnlyList<Language> AvailableLanguages { get; } = Enum.GetValues<Language>();
+    public IReadOnlyList<AppTheme> AvailableThemes { get; } = Enum.GetValues<AppTheme>();
 
     public IReadOnlyList<string> AvailableProviders { get; } = new[]
     {
@@ -75,12 +86,14 @@ public partial class SettingsViewModel : ObservableObject
         ISecretStore secretStore,
         IHotkeyService hotkeyService,
         IHudStatusNotifier hudStatusNotifier,
+        IStartupService startupService,
         Action hotkeyPressedCallback)
     {
         _settingsStore = settingsStore;
         _secretStore = secretStore;
         _hotkeyService = hotkeyService;
         _hudStatusNotifier = hudStatusNotifier;
+        _startupService = startupService;
         _hotkeyPressedCallback = hotkeyPressedCallback;
 
         // Snapshot current settings into ViewModel properties
@@ -90,6 +103,10 @@ public partial class SettingsViewModel : ObservableObject
         _hotkey = settings.Hotkey;
         _activeOnlineProvider = settings.ActiveOnlineProvider;
         _originalHotkey = settings.Hotkey;
+
+        _selectedTheme = settings.Theme;
+        _showHud = settings.ShowHud;
+        _launchWithWindows = _startupService.IsEnabled();
 
         // Load API key masked indicator for initial provider
         RefreshApiKeyPlaceholder();
@@ -115,7 +132,9 @@ public partial class SettingsViewModel : ObservableObject
             Hotkey = Hotkey,
             PrimaryLanguage = PrimaryLanguage,
             SecondaryLanguage = SecondaryLanguage,
-            ActiveOnlineProvider = ActiveOnlineProvider
+            ActiveOnlineProvider = ActiveOnlineProvider,
+            Theme = SelectedTheme,
+            ShowHud = ShowHud
         };
 
         if (!newSettings.Validate(out var errors))
@@ -146,6 +165,11 @@ public partial class SettingsViewModel : ObservableObject
 
         // Persist settings
         _settingsStore.Save(newSettings);
+
+        if (LaunchWithWindows)
+            _startupService.Enable();
+        else
+            _startupService.Disable();
 
         SavedSuccessfully = true;
         CloseRequested?.Invoke();

@@ -9,6 +9,9 @@ public class AppSettings
     public Language PrimaryLanguage { get; set; } = Language.En;
     public Language SecondaryLanguage { get; set; } = Language.Ru;
     public string ActiveOnlineProvider { get; set; } = ProviderIdentifiers.Azure;
+    public AppTheme Theme { get; set; } = AppTheme.Dark;
+    public bool LaunchWithWindows { get; set; } = false;
+    public bool ShowHud { get; set; } = true;
 
     [JsonIgnore]
     public HotkeyCombination HotkeyCombination

@@ -34,6 +34,7 @@ public partial class App : System.Windows.Application
                 services.AddSingleton<ISettingsRepository>(sp => sp.GetRequiredService<JsonSettingsStore>());
                 services.AddSingleton<ISecretStore, CredentialManagerSecretStore>();
                 services.AddSingleton(sp => sp.GetRequiredService<ISettingsStore>().Load());
+                services.AddSingleton<IStartupService, RegistryStartupService>();
 
                 services.AddSingleton<IHotkeyService, GlobalHotkeyService>();
                 services.AddSingleton<IClipboardService, ClipboardAdapter>();
@@ -63,6 +64,7 @@ public partial class App : System.Windows.Application
                     sp.GetRequiredService<ISecretStore>(),
                     sp.GetRequiredService<IHotkeyService>(),
                     sp.GetRequiredService<IHudStatusNotifier>(),
+                    sp.GetRequiredService<IStartupService>(),
                     CreateHotkeyPressedCallback()));
             })
             .Build();

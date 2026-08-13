@@ -32,20 +32,64 @@ public partial class HudWindow : Window
         SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
     }
 
-    public void ShowStatus(string message, TimeSpan? hideAfter = null, SolidColorBrush? background = null)
+    public void ShowTranslating()
     {
         _hideTimer.Stop();
         
-        MessageText.Text = message;
-        if (background != null)
-        {
-            ((System.Windows.Controls.Border)Content).Background = background;
-        }
-        else
-        {
-            ((System.Windows.Controls.Border)Content).Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0x00, 0x00, 0x00));
-        }
+        Spinner.Visibility = Visibility.Visible;
+        SuccessIcon.Visibility = Visibility.Collapsed;
+        ErrorIcon.Visibility = Visibility.Collapsed;
+        MessageText.Text = "Translating...";
+        
+        ShowAndPosition();
+    }
 
+    public void ShowSuccess()
+    {
+        Spinner.Visibility = Visibility.Collapsed;
+        SuccessIcon.Visibility = Visibility.Visible;
+        ErrorIcon.Visibility = Visibility.Collapsed;
+        MessageText.Text = "Done";
+        
+        ShowAndPosition(TimeSpan.FromSeconds(1));
+    }
+
+    public void ShowError(string message)
+    {
+        Spinner.Visibility = Visibility.Collapsed;
+        SuccessIcon.Visibility = Visibility.Collapsed;
+        ErrorIcon.Visibility = Visibility.Visible;
+        MessageText.Text = message;
+        
+        ShowAndPosition(TimeSpan.FromSeconds(4));
+    }
+
+    public void ApplyThemeColors(Flow.Domain.AppTheme theme)
+    {
+        switch (theme)
+        {
+            case Flow.Domain.AppTheme.Light:
+                ContainerBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1e, 0x29, 0x3b));
+                ContainerBorder.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xff, 0xff, 0xff));
+                MessageText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xff, 0xff, 0xff));
+                Spinner.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3b, 0x82, 0xf6));
+                GlowEffect.Opacity = 0;
+                ContainerBorder.CornerRadius = new CornerRadius(24);
+                break;
+            case Flow.Domain.AppTheme.Dark:
+                ContainerBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0x00, 0x00));
+                ContainerBorder.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x33, 0x41, 0x55));
+                MessageText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xf8, 0xfa, 0xfc));
+                Spinner.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x63, 0x66, 0xf1));
+                GlowEffect.Color = System.Windows.Media.Color.FromRgb(0x63, 0x66, 0xf1);
+                GlowEffect.Opacity = 0.3;
+                ContainerBorder.CornerRadius = new CornerRadius(30);
+                break;
+        }
+    }
+
+    private void ShowAndPosition(TimeSpan? hideAfter = null)
+    {
         PositionWindow();
         
         if (!IsVisible)

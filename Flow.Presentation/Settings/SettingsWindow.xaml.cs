@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Interop;
+using Flow.Domain;
 
 namespace Flow.Presentation.Settings;
 
@@ -20,10 +23,54 @@ public partial class SettingsWindow : Window
         InitializeComponent();
         DataContext = viewModel;
 
+        ApplyTheme(viewModel.SelectedTheme);
+
+        viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
         // Subscribe to ViewModel's close request
         viewModel.CloseRequested += OnCloseRequested;
         Closed += OnWindowClosed;
     }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingsViewModel.SelectedTheme) && DataContext is SettingsViewModel vm)
+        {
+            ApplyTheme(vm.SelectedTheme);
+        }
+    }
+
+    private void ApplyTheme(AppTheme theme)
+    {
+        Resources.MergedDictionaries.Clear();
+        var uri = theme switch
+        {
+            AppTheme.Light => new Uri("pack://application:,,,/Flow.Presentation;component/Themes/LightTheme.xaml"),
+            _ => new Uri("pack://application:,,,/Flow.Presentation;component/Themes/DarkTheme.xaml")
+        };
+        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = uri });
+
+        var helper = new WindowInteropHelper(this);
+        if (helper.Handle == IntPtr.Zero)
+        {
+            SourceInitialized += (s, e) => ApplyDwm(theme);
+        }
+        else
+        {
+            ApplyDwm(theme);
+        }
+    }
+
+    private void ApplyDwm(AppTheme theme)
+    {
+        var helper = new WindowInteropHelper(this);
+        
+        int useDarkMode = theme == AppTheme.Dark ? 1 : 0;
+        DwmSetWindowAttribute(helper.Handle, 20, ref useDarkMode, sizeof(int));
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
     private void OnCloseRequested()
     {
@@ -34,8 +81,20 @@ public partial class SettingsWindow : Window
     {
         if (DataContext is SettingsViewModel vm)
         {
+            vm.PropertyChanged -= OnViewModelPropertyChanged;
             vm.CloseRequested -= OnCloseRequested;
         }
+    }
+
+    private void Header_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == System.Windows.Input.MouseButton.Left)
+            this.DragMove();
+    }
+
+    private void CloseButton_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        Close();
     }
 
     private void HotkeyTextBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

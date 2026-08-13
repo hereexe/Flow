@@ -35,7 +35,12 @@ public class TranslationOrchestrator : ITranslationOrchestrator
     /// <inheritdoc />
     public async Task<TranslationResult> ExecuteTranslationAsync(CancellationToken ct = default)
     {
-        _hudNotifier.ShowTranslating();
+        var settings = _settingsRepository.LoadSettings();
+        var showHud = settings.ShowHud;
+
+        if (showHud)
+            _hudNotifier.ShowTranslating();
+
         var snapshot = _clipboardService.CaptureSnapshot();
         try
         {
@@ -51,19 +56,19 @@ public class TranslationOrchestrator : ITranslationOrchestrator
 
             if (result.Success && !string.IsNullOrWhiteSpace(result.TranslatedText))
             {
-                _hudNotifier.ShowSuccess();
+                if (showHud) _hudNotifier.ShowSuccess();
                 await _clipboardService.ReplaceSelectedTextAsync(result.TranslatedText, ct);
             }
             else
             {
-                _hudNotifier.ShowError(result.ErrorMessage ?? "Translation failed.");
+                if (showHud) _hudNotifier.ShowError(result.ErrorMessage ?? "Translation failed.");
             }
 
             return result;
         }
         catch (Exception ex)
         {
-            _hudNotifier.ShowError(ex.Message);
+            if (showHud) _hudNotifier.ShowError(ex.Message);
             return TranslationResult.Fail(ex.Message);
         }
         finally
@@ -91,7 +96,11 @@ public class TranslationOrchestrator : ITranslationOrchestrator
             (source, target) = _directionDetector.DetectDirection(text);
         }
 
-        _hudNotifier.ShowTranslating();
+        var settings = _settingsRepository.LoadSettings();
+        if (settings.ShowHud)
+        {
+            _hudNotifier.ShowTranslating();
+        }
 
         var stopwatch = Stopwatch.StartNew();
         var provider = GetActiveProvider();
