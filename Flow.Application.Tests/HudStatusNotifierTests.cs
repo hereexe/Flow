@@ -22,7 +22,7 @@ public class HudStatusNotifierTests
             StatusChanged?.Invoke(this, new HudStatusChangedEventArgs(HudStatusState.Success, message));
         }
 
-        public void ShowError(string errorMessage)
+        public void ShowError(string? errorMessage = null)
         {
             CurrentState = HudStatusState.Error;
             StatusChanged?.Invoke(this, new HudStatusChangedEventArgs(HudStatusState.Error, errorMessage));
@@ -67,5 +67,28 @@ public class HudStatusNotifierTests
         // Assert
         Assert.Equal(HudStatusState.Error, notifier.CurrentState);
         Assert.Equal("API connection timeout", errorMessage);
+    }
+
+    [Fact]
+    public void ShowError_WithoutParameter_EmitsNullMessageInEvent()
+    {
+        // Arrange
+        var notifier = new FakeHudNotifier();
+        HudStatusState? lastStateEmitted = null;
+        string? errorMessage = "initial";
+
+        notifier.StatusChanged += (sender, args) => 
+        {
+            lastStateEmitted = args.State;
+            errorMessage = args.Message;
+        };
+
+        // Act
+        notifier.ShowError();
+
+        // Assert
+        Assert.Equal(HudStatusState.Error, notifier.CurrentState);
+        Assert.Equal(HudStatusState.Error, lastStateEmitted);
+        Assert.Null(errorMessage);
     }
 }

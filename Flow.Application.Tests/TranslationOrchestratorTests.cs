@@ -67,7 +67,7 @@ public class TranslationOrchestratorTests
 
         public void ShowTranslating() { CurrentState = HudStatusState.Translating; StateHistory.Add(CurrentState); }
         public void ShowSuccess(string? message = null) { CurrentState = HudStatusState.Success; StateHistory.Add(CurrentState); }
-        public void ShowError(string errorMessage) { CurrentState = HudStatusState.Error; StateHistory.Add(CurrentState); }
+        public void ShowError(string? errorMessage = null) { CurrentState = HudStatusState.Error; StateHistory.Add(CurrentState); }
         public void Hide() { CurrentState = HudStatusState.Hidden; StateHistory.Add(CurrentState); }
     }
 

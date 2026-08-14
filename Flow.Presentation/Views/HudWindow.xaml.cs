@@ -44,24 +44,24 @@ public partial class HudWindow : Window
         ShowAndPosition();
     }
 
-    public void ShowSuccess()
+    public void ShowSuccess(string? message = null)
     {
         Spinner.Visibility = Visibility.Collapsed;
         SuccessIcon.Visibility = Visibility.Visible;
         ErrorIcon.Visibility = Visibility.Collapsed;
-        MessageText.Text = "Done";
+        MessageText.Text = string.IsNullOrWhiteSpace(message) ? "Done" : message;
         
         ShowAndPosition(TimeSpan.FromSeconds(1));
     }
 
-    public void ShowError(string message)
+    public void ShowError(string? message = null)
     {
         Spinner.Visibility = Visibility.Collapsed;
         SuccessIcon.Visibility = Visibility.Collapsed;
         ErrorIcon.Visibility = Visibility.Visible;
-        MessageText.Text = message;
+        MessageText.Text = string.IsNullOrWhiteSpace(message) ? "Error" : message;
         
-        ShowAndPosition(TimeSpan.FromSeconds(4));
+        ShowAndPosition(TimeSpan.FromSeconds(2.5));
     }
 
     public void ApplyThemeColors(Flow.Domain.AppTheme theme)
@@ -77,12 +77,11 @@ public partial class HudWindow : Window
                 ContainerBorder.CornerRadius = new CornerRadius(24);
                 break;
             case Flow.Domain.AppTheme.Dark:
-                ContainerBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0x00, 0x00));
+                ContainerBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x0f, 0x17, 0x2a));
                 ContainerBorder.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x33, 0x41, 0x55));
                 MessageText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xf8, 0xfa, 0xfc));
-                Spinner.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x63, 0x66, 0xf1));
-                GlowEffect.Color = System.Windows.Media.Color.FromRgb(0x63, 0x66, 0xf1);
-                GlowEffect.Opacity = 0.3;
+                Spinner.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x38, 0xbd, 0xf8));
+                GlowEffect.Opacity = 0;
                 ContainerBorder.CornerRadius = new CornerRadius(30);
                 break;
         }

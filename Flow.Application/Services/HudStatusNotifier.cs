@@ -23,7 +23,7 @@ public class HudStatusNotifier : IHudStatusNotifier
         OnStatusChanged(new HudStatusChangedEventArgs(HudStatusState.Success, message));
     }
 
-    public void ShowError(string errorMessage)
+    public void ShowError(string? errorMessage = null)
     {
         CurrentState = HudStatusState.Error;
         OnStatusChanged(new HudStatusChangedEventArgs(HudStatusState.Error, errorMessage));

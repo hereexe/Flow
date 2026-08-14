@@ -21,6 +21,6 @@ public interface IHudStatusNotifier
     HudStatusState CurrentState { get; }
     void ShowTranslating();
     void ShowSuccess(string? message = null);
-    void ShowError(string errorMessage);
+    void ShowError(string? errorMessage = null);
     void Hide();
 }

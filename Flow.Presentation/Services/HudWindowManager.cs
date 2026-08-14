@@ -40,10 +40,10 @@ public class HudWindowManager : IDisposable
                     _hudWindow.ShowTranslating();
                     break;
                 case HudStatusState.Success:
-                    _hudWindow.ShowSuccess();
+                    _hudWindow.ShowSuccess(e.Message);
                     break;
                 case HudStatusState.Error:
-                    _hudWindow.ShowError(e.Message ?? "Error");
+                    _hudWindow.ShowError("Error");
                     break;
                 case HudStatusState.Hidden:
                 case HudStatusState.Canceled:
