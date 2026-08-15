@@ -11,6 +11,7 @@ namespace Flow.Presentation.Services;
 public class TrayIconManager : IDisposable
 {
     private readonly NotifyIcon _notifyIcon;
+    private readonly Icon _appIcon;
     private readonly IHudStatusNotifier _statusNotifier;
     private readonly IServiceProvider _serviceProvider;
     private SettingsWindow? _settingsWindow;
@@ -20,10 +21,11 @@ public class TrayIconManager : IDisposable
     {
         _statusNotifier = statusNotifier;
         _serviceProvider = serviceProvider;
+        _appIcon = LoadAppIcon();
 
         _notifyIcon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = _appIcon,
             Visible = true,
             Text = "Flow - Ready"
         };
@@ -93,7 +95,7 @@ public class TrayIconManager : IDisposable
 
     private void SetReadyState()
     {
-        _notifyIcon.Icon = SystemIcons.Application;
+        _notifyIcon.Icon = _appIcon;
         _notifyIcon.Text = "Flow - Ready";
     }
 
@@ -119,6 +121,24 @@ public class TrayIconManager : IDisposable
         _notifyIcon.Text = tooltip;
     }
 
+    private static Icon LoadAppIcon()
+    {
+        try
+        {
+            var uri = new Uri("pack://application:,,,/Flow.Presentation;component/Assets/flow.ico");
+            var streamInfo = System.Windows.Application.GetResourceStream(uri);
+            if (streamInfo?.Stream != null)
+            {
+                return new Icon(streamInfo.Stream);
+            }
+        }
+        catch
+        {
+            // Fallback to generic system application icon if loading fails
+        }
+        return SystemIcons.Application;
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -132,6 +152,11 @@ public class TrayIconManager : IDisposable
         {
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
+        }
+
+        if (_appIcon != null && _appIcon != SystemIcons.Application)
+        {
+            _appIcon.Dispose();
         }
 
         _disposed = true;
