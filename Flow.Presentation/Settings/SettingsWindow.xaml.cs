@@ -62,28 +62,7 @@ public partial class SettingsWindow : Window
             _ => new Uri("pack://application:,,,/Flow.Presentation;component/Themes/DarkTheme.xaml")
         };
         Resources.MergedDictionaries.Add(new ResourceDictionary { Source = uri });
-
-        var helper = new WindowInteropHelper(this);
-        if (helper.Handle == IntPtr.Zero)
-        {
-            SourceInitialized += (s, e) => ApplyDwm(theme);
-        }
-        else
-        {
-            ApplyDwm(theme);
-        }
     }
-
-    private void ApplyDwm(AppTheme theme)
-    {
-        var helper = new WindowInteropHelper(this);
-        
-        int useDarkMode = theme == AppTheme.Dark ? 1 : 0;
-        DwmSetWindowAttribute(helper.Handle, 20, ref useDarkMode, sizeof(int));
-    }
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
     private void OnCloseRequested()
     {

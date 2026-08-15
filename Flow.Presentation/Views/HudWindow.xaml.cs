@@ -2,14 +2,18 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using System.Windows.Media;
+using MediaBrush = System.Windows.Media.Brush;
+using MediaColor = System.Windows.Media.Color;
+using SolidColorBrush = System.Windows.Media.SolidColorBrush;
 
 namespace Flow.Presentation.Views;
 
 public partial class HudWindow : Window
 {
     private readonly DispatcherTimer _hideTimer;
+    private Storyboard? _pulseStoryboard;
 
     public HudWindow()
     {
@@ -20,6 +24,11 @@ public partial class HudWindow : Window
         {
             _hideTimer.Stop();
             Hide();
+        };
+
+        Loaded += (s, e) =>
+        {
+            _pulseStoryboard = Resources["DotPulseStoryboard"] as Storyboard;
         };
     }
 
@@ -32,33 +41,59 @@ public partial class HudWindow : Window
         SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
     }
 
+    /// <summary>
+    /// CSS: .hud-v5 .hud-dot { background: var(--accent-blue) = #4d8ef7; animation: pulse }
+    /// CSS: .hud-v5 .hud-text { color: #8892ac }
+    /// </summary>
     public void ShowTranslating()
     {
         _hideTimer.Stop();
         
-        Spinner.Visibility = Visibility.Visible;
-        SuccessIcon.Visibility = Visibility.Collapsed;
-        ErrorIcon.Visibility = Visibility.Collapsed;
-        MessageText.Text = "Translating...";
-        
+        // --accent-blue: #4d8ef7
+        StatusDot.Fill = new SolidColorBrush(MediaColor.FromRgb(0x4D, 0x8E, 0xF7));
+        // .hud-text color: #8892ac
+        MessageText.Foreground = new SolidColorBrush(MediaColor.FromRgb(0x88, 0x92, 0xAC));
+        MessageText.Text = "Translating…";
+
+        _pulseStoryboard ??= Resources["DotPulseStoryboard"] as Storyboard;
+        _pulseStoryboard?.Begin(this, true);
+
         ShowAndPosition();
     }
 
+    /// <summary>
+    /// CSS: .hud-v5.success .hud-dot { background: var(--accent-green) = #34d399; animation: none }
+    /// CSS: .hud-v5.success .hud-text { color: #a0b8a8 }
+    /// </summary>
     public void ShowSuccess(string? message = null)
     {
-        Spinner.Visibility = Visibility.Collapsed;
-        SuccessIcon.Visibility = Visibility.Visible;
-        ErrorIcon.Visibility = Visibility.Collapsed;
+        _pulseStoryboard?.Stop(this);
+        StatusDot.BeginAnimation(UIElement.OpacityProperty, null);
+        StatusDot.Opacity = 1.0;
+
+        // --accent-green: #34d399
+        StatusDot.Fill = new SolidColorBrush(MediaColor.FromRgb(0x34, 0xD3, 0x99));
+        // .success .hud-text color: #a0b8a8
+        MessageText.Foreground = new SolidColorBrush(MediaColor.FromRgb(0xA0, 0xB8, 0xA8));
         MessageText.Text = string.IsNullOrWhiteSpace(message) ? "Done" : message;
         
-        ShowAndPosition(TimeSpan.FromSeconds(1));
+        ShowAndPosition(TimeSpan.FromSeconds(1.2));
     }
 
+    /// <summary>
+    /// CSS: .hud-v5.error .hud-dot { background: var(--accent-red) = #f87171; animation: none }
+    /// CSS: .hud-v5.error .hud-text { color: #b8a0a0 }
+    /// </summary>
     public void ShowError(string? message = null)
     {
-        Spinner.Visibility = Visibility.Collapsed;
-        SuccessIcon.Visibility = Visibility.Collapsed;
-        ErrorIcon.Visibility = Visibility.Visible;
+        _pulseStoryboard?.Stop(this);
+        StatusDot.BeginAnimation(UIElement.OpacityProperty, null);
+        StatusDot.Opacity = 1.0;
+
+        // --accent-red: #f87171
+        StatusDot.Fill = new SolidColorBrush(MediaColor.FromRgb(0xF8, 0x71, 0x71));
+        // .error .hud-text color: #b8a0a0
+        MessageText.Foreground = new SolidColorBrush(MediaColor.FromRgb(0xB8, 0xA0, 0xA0));
         MessageText.Text = string.IsNullOrWhiteSpace(message) ? "Error" : message;
         
         ShowAndPosition(TimeSpan.FromSeconds(2.5));
@@ -66,29 +101,12 @@ public partial class HudWindow : Window
 
     public void ApplyThemeColors(Flow.Domain.AppTheme theme)
     {
-        switch (theme)
-        {
-            case Flow.Domain.AppTheme.Light:
-                ContainerBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1e, 0x29, 0x3b));
-                ContainerBorder.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xff, 0xff, 0xff));
-                MessageText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xff, 0xff, 0xff));
-                Spinner.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3b, 0x82, 0xf6));
-                GlowEffect.Opacity = 0;
-                ContainerBorder.CornerRadius = new CornerRadius(24);
-                break;
-            case Flow.Domain.AppTheme.Dark:
-                ContainerBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x0f, 0x17, 0x2a));
-                ContainerBorder.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x33, 0x41, 0x55));
-                MessageText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xf8, 0xfa, 0xfc));
-                Spinner.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x38, 0xbd, 0xf8));
-                GlowEffect.Opacity = 0;
-                ContainerBorder.CornerRadius = new CornerRadius(30);
-                break;
-        }
+        // HUD colors are hardcoded to match CSS spec exactly, theme switching is N/A for HUD
     }
 
     private void ShowAndPosition(TimeSpan? hideAfter = null)
     {
+        Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
         PositionWindow();
         
         if (!IsVisible)
@@ -119,8 +137,11 @@ public partial class HudWindow : Window
         double screenBottom = workingArea.Bottom / dpiY;
         double screenWidth = workingArea.Width / dpiX;
 
-        this.Left = screenLeft + (screenWidth - this.Width) / 2;
-        this.Top = screenBottom - this.Height - 40;
+        double windowWidth = DesiredSize.Width > 0 ? DesiredSize.Width : (ActualWidth > 0 ? ActualWidth : 120);
+        double windowHeight = DesiredSize.Height > 0 ? DesiredSize.Height : (ActualHeight > 0 ? ActualHeight : 40);
+
+        this.Left = screenLeft + (screenWidth - windowWidth) / 2;
+        this.Top = screenBottom - windowHeight - 40;
     }
 
     private const int GWL_EXSTYLE = -20;

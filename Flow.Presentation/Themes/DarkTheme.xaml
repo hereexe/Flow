@@ -1,10 +1,43 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#1e293b" />
-    <SolidColorBrush x:Key="TextMainBrush" Color="#f8fafc" />
-    <SolidColorBrush x:Key="TextMutedBrush" Color="#94a3b8" />
-    <SolidColorBrush x:Key="BorderBrush" Color="#334155" />
-    <SolidColorBrush x:Key="PrimaryBrush" Color="#6366f1" />
-    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#4f46e5" />
-    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#0f172a" />
+    <!-- Base App / Window Tokens (Whisper Pill) -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F2141622" />
+    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#0AFFFFFF" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#15FFFFFF" />
+    <SolidColorBrush x:Key="InsetHighlightBrush" Color="#14FFFFFF" />
+    
+    <SolidColorBrush x:Key="TextMainBrush" Color="#FF8892AC" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#FF4E5570" />
+    <SolidColorBrush x:Key="WindowControlBrush" Color="#FF444455" />
+    
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#FF4D8EF7" />
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#FF3D7EE0" />
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#800A0C16" />
+    <SolidColorBrush x:Key="ToggleTrackBrush" Color="#0FFFFFFF" />
+    <SolidColorBrush x:Key="ToggleThumbBrush" Color="#FF555566" />
+
+    <!-- Dropdown / Popup Tokens -->
+    <SolidColorBrush x:Key="PopupBackgroundBrush" Color="#F510121C" />
+    <SolidColorBrush x:Key="ComboBoxItemHoverBrush" Color="#1AFFFFFF" />
+    <SolidColorBrush x:Key="ComboBoxItemSelectedBrush" Color="#25FFFFFF" />
+    
+    <!-- HUD Tokens (Whisper Pill) -->
+    <SolidColorBrush x:Key="HudBackgroundBrush" Color="#E6161824" />
+    <SolidColorBrush x:Key="HudBorderBrush" Color="#15FFFFFF" />
+    <SolidColorBrush x:Key="HudTextBrush" Color="#FF8892AC" />
+    <SolidColorBrush x:Key="HudTextSuccessBrush" Color="#FFA0B8A8" />
+    <SolidColorBrush x:Key="HudTextErrorBrush" Color="#FFB8A0A0" />
+    
+    <SolidColorBrush x:Key="HudDotActiveBrush" Color="#FF4D8EF7" />
+    <SolidColorBrush x:Key="HudDotSuccessBrush" Color="#FF34D399" />
+    <SolidColorBrush x:Key="HudDotErrorBrush" Color="#FFF87171" />
+    
+    <Color x:Key="HudShadowColor">#73000000</Color>
+
+    <!-- Corner Radii -->
+    <CornerRadius x:Key="WindowCornerRadius">22</CornerRadius>
+    <CornerRadius x:Key="HudCornerRadius">100</CornerRadius>
+    <CornerRadius x:Key="InputCornerRadius">12</CornerRadius>
+    <CornerRadius x:Key="ButtonCornerRadius">14</CornerRadius>
+    <CornerRadius x:Key="ToggleCornerRadius">10</CornerRadius>
 </ResourceDictionary>
