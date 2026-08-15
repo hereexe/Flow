@@ -45,8 +45,8 @@ public class AzureTranslatorProvider : ITranslationProvider
 
         try
         {
-            var sourceLang = request.SourceLanguage.ToString().ToLowerInvariant();
-            var targetLang = request.TargetLanguage.ToString().ToLowerInvariant();
+            var sourceLang = MapLanguageCode(request.SourceLanguage);
+            var targetLang = MapLanguageCode(request.TargetLanguage);
 
             var url = $"https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from={sourceLang}&to={targetLang}";
 
@@ -100,6 +100,12 @@ public class AzureTranslatorProvider : ITranslationProvider
             return TranslationResult.Fail($"Ошибка при выполнении перевода {ProviderId}: {ex.Message}", ProviderId);
         }
     }
+
+    private static string MapLanguageCode(Language language) => language switch
+    {
+        Language.Zh => "zh-Hans",
+        _ => language.ToIsoCode()
+    };
 
     private class AzureTranslateResponse
     {

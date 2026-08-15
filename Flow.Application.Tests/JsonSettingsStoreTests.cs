@@ -66,6 +66,30 @@ public class JsonSettingsStoreTests : IDisposable
         Assert.Equal(ProviderIdentifiers.DeepL, loaded.ActiveOnlineProvider);
     }
 
+    [Theory]
+    [InlineData(Language.Ja, Language.Zh)]
+    [InlineData(Language.Es, Language.De)]
+    [InlineData(Language.Fr, Language.Pt)]
+    [InlineData(Language.It, Language.En)]
+    public void SaveAndLoad_MultiLanguage_PreservesConfiguredLanguages(Language primary, Language secondary)
+    {
+        // Arrange
+        var store = new JsonSettingsStore(_tempPath);
+        var initial = new AppSettings
+        {
+            PrimaryLanguage = primary,
+            SecondaryLanguage = secondary
+        };
+
+        // Act
+        store.Save(initial);
+        var loaded = store.Load();
+
+        // Assert
+        Assert.Equal(primary, loaded.PrimaryLanguage);
+        Assert.Equal(secondary, loaded.SecondaryLanguage);
+    }
+
     [Fact]
     public void Load_WhenJsonIsCorrupted_ReturnsDefaultSettingsAndRecoversFile()
     {

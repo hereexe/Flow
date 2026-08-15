@@ -352,12 +352,24 @@
 
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="Source Language" Style="{StaticResource SectionLabel}"/>
-                                    <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding PrimaryLanguage}"/>
+                                    <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding PrimaryLanguage}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource LanguageDisplayNameConverter}}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="Target Language" Style="{StaticResource SectionLabel}"/>
-                                    <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SecondaryLanguage}"/>
+                                    <ComboBox ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SecondaryLanguage}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource LanguageDisplayNameConverter}}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
                                 </StackPanel>
                             </Grid>
 

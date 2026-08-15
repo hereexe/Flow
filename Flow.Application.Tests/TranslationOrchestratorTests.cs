@@ -62,6 +62,7 @@ public class TranslationOrchestratorTests
     private class FakeHudNotifier : IHudStatusNotifier
     {
         public event EventHandler<HudStatusChangedEventArgs>? StatusChanged;
+        public void TriggerStatusChanged(HudStatusChangedEventArgs e) => StatusChanged?.Invoke(this, e);
         public HudStatusState CurrentState { get; private set; } = HudStatusState.Hidden;
         public List<HudStatusState> StateHistory { get; } = new();
 
@@ -101,10 +102,11 @@ public class TranslationOrchestratorTests
         IDirectionDetector detector,
         ITranslationProvider provider,
         IClipboardService clipboard,
-        IHudStatusNotifier hud)
+        IHudStatusNotifier hud,
+        AppSettings? settings = null)
     {
         var factory = new FakeTranslationProviderFactory(provider);
-        var settingsRepo = new FakeSettingsRepository();
+        var settingsRepo = new FakeSettingsRepository { Settings = settings ?? new AppSettings() };
         return new TranslationOrchestrator(detector, factory, settingsRepo, clipboard, hud);
     }
 
@@ -299,4 +301,63 @@ public class TranslationOrchestratorTests
         Assert.Equal("[Translated] Dynamic Test", clipboard.ReplacedText);
         Assert.True(clipboard.SnapshotRestored);
     }
+
+    [Theory]
+    [InlineData("こんにちは", Language.En, Language.Ja, Language.Ja, Language.En)]
+    [InlineData("Hello", Language.En, Language.Ja, Language.En, Language.Ja)]
+    [InlineData("Schöne Grüße", Language.En, Language.De, Language.De, Language.En)]
+    [InlineData("¿Cómo estás?", Language.En, Language.Es, Language.Es, Language.En)]
+    [InlineData("Bonjour, ça va?", Language.En, Language.Fr, Language.Fr, Language.En)]
+    public async Task TranslateTextAsync_WithConfiguredLanguagePairs_PassesLanguagesToDetectorAndProvider(
+        string text, Language primary, Language secondary, Language expectedSource, Language expectedTarget)
+    {
+        // Arrange
+        var provider = new FakeTranslationProvider();
+        var clipboard = new FakeClipboardService();
+        var hud = new FakeHudNotifier();
+        var detector = new DirectionDetector();
+        var settings = new AppSettings
+        {
+            PrimaryLanguage = primary,
+            SecondaryLanguage = secondary
+        };
+
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud, settings);
+
+        // Act
+        var result = await orchestrator.TranslateTextAsync(text);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.NotNull(provider.LastRequest);
+        Assert.Equal(expectedSource, provider.LastRequest!.SourceLanguage);
+        Assert.Equal(expectedTarget, provider.LastRequest!.TargetLanguage);
+    }
+
+    [Fact]
+    public async Task TranslateTextAsync_WithExplicitTargetAndConfiguredPair_DeterminesOppositeFromPair()
+    {
+        // Arrange
+        var provider = new FakeTranslationProvider();
+        var clipboard = new FakeClipboardService();
+        var hud = new FakeHudNotifier();
+        var detector = new DirectionDetector();
+        var settings = new AppSettings
+        {
+            PrimaryLanguage = Language.En,
+            SecondaryLanguage = Language.De
+        };
+
+        var orchestrator = CreateOrchestrator(detector, provider, clipboard, hud, settings);
+
+        // Act - Explicit target is German -> Source should be English
+        var result = await orchestrator.TranslateTextAsync("Hello", targetLanguage: Language.De);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.NotNull(provider.LastRequest);
+        Assert.Equal(Language.De, provider.LastRequest!.TargetLanguage);
+        Assert.Equal(Language.En, provider.LastRequest!.SourceLanguage);
+    }
 }
+

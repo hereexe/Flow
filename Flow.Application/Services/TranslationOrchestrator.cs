@@ -83,20 +83,21 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         Language? targetLanguage = null,
         CancellationToken ct = default)
     {
+        var settings = _settingsRepository.LoadSettings();
+
         Language source;
         Language target;
 
         if (targetLanguage.HasValue)
         {
             target = targetLanguage.Value;
-            source = target == Language.Ru ? Language.En : Language.Ru;
+            source = target == settings.PrimaryLanguage ? settings.SecondaryLanguage : settings.PrimaryLanguage;
         }
         else
         {
-            (source, target) = _directionDetector.DetectDirection(text);
+            (source, target) = _directionDetector.DetectDirection(text, settings.PrimaryLanguage, settings.SecondaryLanguage);
         }
 
-        var settings = _settingsRepository.LoadSettings();
         if (settings.ShowHud)
         {
             _hudNotifier.ShowTranslating();

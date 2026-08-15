@@ -63,6 +63,25 @@ public class DirectionDetectorTests
         Assert.Equal(Language.Ru, target);
     }
 
+    [Theory]
+    [InlineData("こんにちは", Language.En, Language.Ja, Language.Ja, Language.En)]
+    [InlineData("ラーメンを食べます", Language.En, Language.Ja, Language.Ja, Language.En)]
+    [InlineData("Hello there", Language.En, Language.Ja, Language.En, Language.Ja)]
+    [InlineData("你好世界", Language.En, Language.Zh, Language.Zh, Language.En)]
+    [InlineData("Schöne Grüße", Language.En, Language.De, Language.De, Language.En)]
+    [InlineData("¿Cómo estás?", Language.En, Language.Es, Language.Es, Language.En)]
+    [InlineData("Bonjour, ça va?", Language.En, Language.Fr, Language.Fr, Language.En)]
+    [InlineData("Olá, não posso", Language.En, Language.Pt, Language.Pt, Language.En)]
+    [InlineData("Città e università", Language.En, Language.It, Language.It, Language.En)]
+    public void DetectDirection_MultiLanguagePairs_ResolvesCorrectDirection(
+        string text, Language defaultSource, Language defaultTarget, Language expectedSource, Language expectedTarget)
+    {
+        var (source, target) = _detector.DetectDirection(text, defaultSource, defaultTarget);
+
+        Assert.Equal(expectedSource, source);
+        Assert.Equal(expectedTarget, target);
+    }
+
     // --- DetectLanguage tests ---
 
     [Theory]
@@ -133,5 +152,24 @@ public class DirectionDetectorTests
         // "Hello мир" — 5 Latin, 3 Cyrillic → En
         Assert.Equal(Language.En, _detector.DetectLanguage("Hello мир"));
     }
-}
 
+    [Theory]
+    [InlineData("こんにちは", Language.Ja)]
+    [InlineData("カタカナ", Language.Ja)]
+    [InlineData("日本語", Language.Zh)] // Pure CJK ideographs default to Zh
+    public void DetectLanguage_AsianScripts_IdentifiedCorrectly(string text, Language expected)
+    {
+        Assert.Equal(expected, _detector.DetectLanguage(text));
+    }
+
+    [Theory]
+    [InlineData("Schöne Grüße aus München", Language.De)]
+    [InlineData("¿Cómo estás Señor?", Language.Es)]
+    [InlineData("C'est une belle journée «française»", Language.Fr)]
+    [InlineData("Não tenho informações sobre isso", Language.Pt)]
+    [InlineData("Così è la vita, più o meno", Language.It)]
+    public void DetectLanguage_LatinWithDiacritics_IdentifiedCorrectly(string text, Language expected)
+    {
+        Assert.Equal(expected, _detector.DetectLanguage(text));
+    }
+}

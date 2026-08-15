@@ -49,8 +49,8 @@ public class GoogleTranslateProvider : ITranslationProvider
             var payload = new GoogleTranslateRequest
             {
                 Query = request.SourceText,
-                SourceLanguage = request.SourceLanguage.ToString().ToLowerInvariant(),
-                TargetLanguage = request.TargetLanguage.ToString().ToLowerInvariant(),
+                SourceLanguage = request.SourceLanguage.ToIsoCode(),
+                TargetLanguage = request.TargetLanguage.ToIsoCode(),
                 Format = "text"
             };
 

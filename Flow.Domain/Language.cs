@@ -3,5 +3,12 @@ namespace Flow.Domain;
 public enum Language
 {
     Ru,
-    En
+    En,
+    Es,
+    De,
+    Fr,
+    Pt,
+    It,
+    Zh,
+    Ja
 }

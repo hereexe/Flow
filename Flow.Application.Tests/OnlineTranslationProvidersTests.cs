@@ -311,4 +311,129 @@ public class OnlineTranslationProvidersTests
         Assert.NotNull(selectedProvider);
         Assert.Equal(targetProvider, selectedProvider.ProviderId);
     }
+
+    // --- Provider Language Code Mapping Tests ---
+
+    [Theory]
+    [InlineData(Language.Zh, "zh-Hans")]
+    [InlineData(Language.Ja, "ja")]
+    [InlineData(Language.Es, "es")]
+    [InlineData(Language.De, "de")]
+    [InlineData(Language.Fr, "fr")]
+    [InlineData(Language.Pt, "pt")]
+    [InlineData(Language.It, "it")]
+    public async Task AzureTranslatorProvider_MapsLanguageCodesCorrectly(Language targetLang, string expectedTargetCode)
+    {
+        var secretStore = new FakeSecretStore();
+        secretStore.SaveSecret(ProviderIdentifiers.Azure, "test-key");
+
+        HttpRequestMessage? capturedRequest = null;
+        var handler = new FakeHttpMessageHandler(req =>
+        {
+            capturedRequest = req;
+            var jsonResponse = JsonSerializer.Serialize(new[]
+            {
+                new { translations = new[] { new { text = "Sample", to = expectedTargetCode } } }
+            });
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(jsonResponse, System.Text.Encoding.UTF8, "application/json")
+            });
+        });
+
+        var client = new HttpClient(handler);
+        var provider = new AzureTranslatorProvider(client, secretStore);
+
+        var request = new TranslationRequest("Hello", Language.En, targetLang);
+        var result = await provider.TranslateAsync(request);
+
+        Assert.True(result.Success);
+        Assert.NotNull(capturedRequest);
+        Assert.Contains($"to={expectedTargetCode}", capturedRequest!.RequestUri!.ToString());
+        Assert.Contains("from=en", capturedRequest.RequestUri.ToString());
+    }
+
+    [Theory]
+    [InlineData(Language.En, "EN-US")]
+    [InlineData(Language.Pt, "PT-PT")]
+    [InlineData(Language.Zh, "ZH")]
+    [InlineData(Language.Ja, "JA")]
+    [InlineData(Language.De, "DE")]
+    [InlineData(Language.Es, "ES")]
+    [InlineData(Language.Fr, "FR")]
+    [InlineData(Language.It, "IT")]
+    [InlineData(Language.Ru, "RU")]
+    public async Task DeepLProvider_MapsTargetLanguageCodesCorrectly(Language targetLang, string expectedTargetCode)
+    {
+        var secretStore = new FakeSecretStore();
+        secretStore.SaveSecret(ProviderIdentifiers.DeepL, "test-key");
+
+        string? capturedPayload = null;
+        var handler = new FakeHttpMessageHandler(req =>
+        {
+            capturedPayload = req.Content?.ReadAsStringAsync().Result;
+            var jsonResponse = JsonSerializer.Serialize(new
+            {
+                translations = new[] { new { text = "Sample", detected_source_language = "RU" } }
+            });
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(jsonResponse, System.Text.Encoding.UTF8, "application/json")
+            });
+        });
+
+        var client = new HttpClient(handler);
+        var provider = new DeepLProvider(client, secretStore);
+
+        var request = new TranslationRequest("Текст", Language.Ru, targetLang);
+        var result = await provider.TranslateAsync(request);
+
+        Assert.True(result.Success);
+        Assert.NotNull(capturedPayload);
+        Assert.Contains($"\"target_lang\":\"{expectedTargetCode}\"", capturedPayload);
+        Assert.Contains("\"source_lang\":\"RU\"", capturedPayload);
+    }
+
+    [Theory]
+    [InlineData(Language.Zh, "zh")]
+    [InlineData(Language.Ja, "ja")]
+    [InlineData(Language.De, "de")]
+    [InlineData(Language.Es, "es")]
+    [InlineData(Language.Fr, "fr")]
+    [InlineData(Language.It, "it")]
+    [InlineData(Language.Pt, "pt")]
+    public async Task GoogleTranslateProvider_MapsLanguageCodesCorrectly(Language targetLang, string expectedTargetCode)
+    {
+        var secretStore = new FakeSecretStore();
+        secretStore.SaveSecret(ProviderIdentifiers.Google, "test-key");
+
+        string? capturedPayload = null;
+        var handler = new FakeHttpMessageHandler(req =>
+        {
+            capturedPayload = req.Content?.ReadAsStringAsync().Result;
+            var jsonResponse = JsonSerializer.Serialize(new
+            {
+                data = new { translations = new[] { new { translatedText = "Sample" } } }
+            });
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(jsonResponse, System.Text.Encoding.UTF8, "application/json")
+            });
+        });
+
+        var client = new HttpClient(handler);
+        var provider = new GoogleTranslateProvider(client, secretStore);
+
+        var request = new TranslationRequest("Hello", Language.En, targetLang);
+        var result = await provider.TranslateAsync(request);
+
+        Assert.True(result.Success);
+        Assert.NotNull(capturedPayload);
+        Assert.Contains($"\"target\":\"{expectedTargetCode}\"", capturedPayload);
+        Assert.Contains("\"source\":\"en\"", capturedPayload);
+    }
 }
+

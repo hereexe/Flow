@@ -21,6 +21,7 @@ public partial class SettingsWindow : Window
     {
         // Add the converter to window resources before InitializeComponent uses them
         Resources.Add("StringToVisibilityConverter", new StringToVisibilityConverter());
+        Resources.Add("LanguageDisplayNameConverter", new LanguageDisplayNameConverter());
 
         InitializeComponent();
         DataContext = viewModel;
@@ -165,3 +166,25 @@ internal class StringToVisibilityConverter : IValueConverter
         throw new NotSupportedException();
     }
 }
+
+/// <summary>
+/// Converts a Language enum value to its full English display name.
+/// </summary>
+internal class LanguageDisplayNameConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is Language language)
+        {
+            return language.ToDisplayName();
+        }
+
+        return value?.ToString() ?? string.Empty;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
+

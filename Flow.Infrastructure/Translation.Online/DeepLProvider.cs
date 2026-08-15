@@ -56,8 +56,8 @@ public class DeepLProvider : ITranslationProvider
             var payload = new DeepLTranslateRequest
             {
                 Text = new[] { request.SourceText },
-                SourceLanguage = request.SourceLanguage.ToString().ToUpperInvariant(),
-                TargetLanguage = request.TargetLanguage.ToString().ToUpperInvariant()
+                SourceLanguage = MapSourceLanguage(request.SourceLanguage),
+                TargetLanguage = MapTargetLanguage(request.TargetLanguage)
             };
 
             httpRequest.Content = JsonContent.Create(payload);
@@ -102,6 +102,34 @@ public class DeepLProvider : ITranslationProvider
             return TranslationResult.Fail($"Ошибка при выполнении перевода {ProviderId}: {ex.Message}", ProviderId);
         }
     }
+
+    private static string MapSourceLanguage(Language language) => language switch
+    {
+        Language.Ru => "RU",
+        Language.En => "EN",
+        Language.Es => "ES",
+        Language.De => "DE",
+        Language.Fr => "FR",
+        Language.Pt => "PT",
+        Language.It => "IT",
+        Language.Zh => "ZH",
+        Language.Ja => "JA",
+        _ => language.ToIsoCode().ToUpperInvariant()
+    };
+
+    private static string MapTargetLanguage(Language language) => language switch
+    {
+        Language.En => "EN-US",
+        Language.Pt => "PT-PT",
+        Language.Ru => "RU",
+        Language.Es => "ES",
+        Language.De => "DE",
+        Language.Fr => "FR",
+        Language.It => "IT",
+        Language.Zh => "ZH",
+        Language.Ja => "JA",
+        _ => language.ToIsoCode().ToUpperInvariant()
+    };
 
     private class DeepLTranslateRequest
     {

@@ -6,6 +6,13 @@ public static class LanguageExtensions
     {
         Language.Ru => "ru",
         Language.En => "en",
+        Language.Es => "es",
+        Language.De => "de",
+        Language.Fr => "fr",
+        Language.Pt => "pt",
+        Language.It => "it",
+        Language.Zh => "zh",
+        Language.Ja => "ja",
         _ => throw new ArgumentOutOfRangeException(nameof(language), language, "Unsupported language")
     };
 
@@ -13,6 +20,13 @@ public static class LanguageExtensions
     {
         Language.Ru => "Russian",
         Language.En => "English",
+        Language.Es => "Spanish",
+        Language.De => "German",
+        Language.Fr => "French",
+        Language.Pt => "Portuguese",
+        Language.It => "Italian",
+        Language.Zh => "Chinese",
+        Language.Ja => "Japanese",
         _ => throw new ArgumentOutOfRangeException(nameof(language), language, "Unsupported language")
     };
 
@@ -49,9 +63,52 @@ public static class LanguageExtensions
                 language = Language.En;
                 return true;
 
+            case "es":
+            case "spanish":
+            case "испанский":
+                language = Language.Es;
+                return true;
+
+            case "de":
+            case "german":
+            case "немецкий":
+                language = Language.De;
+                return true;
+
+            case "fr":
+            case "french":
+            case "французский":
+                language = Language.Fr;
+                return true;
+
+            case "pt":
+            case "portuguese":
+            case "португальский":
+                language = Language.Pt;
+                return true;
+
+            case "it":
+            case "italian":
+            case "итальянский":
+                language = Language.It;
+                return true;
+
+            case "zh":
+            case "chinese":
+            case "китайский":
+                language = Language.Zh;
+                return true;
+
+            case "ja":
+            case "japanese":
+            case "японский":
+                language = Language.Ja;
+                return true;
+
             default:
                 language = default;
                 return false;
         }
     }
 }
+
