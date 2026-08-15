@@ -9,6 +9,7 @@ x64/
 x86/
 build/
 publish/
+dist/
 
 # NuGet Packages & Cache
 *.nupkg
