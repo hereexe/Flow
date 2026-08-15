@@ -43,7 +43,7 @@ public class HudWindowManager : IDisposable
                     _hudWindow.ShowSuccess(e.Message);
                     break;
                 case HudStatusState.Error:
-                    _hudWindow.ShowError("Error");
+                    _hudWindow.ShowError(e.Message);
                     break;
                 case HudStatusState.Hidden:
                 case HudStatusState.Canceled:

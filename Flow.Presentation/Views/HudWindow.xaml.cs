@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using MediaBrush = System.Windows.Media.Brush;
@@ -14,6 +15,7 @@ public partial class HudWindow : Window
 {
     private readonly DispatcherTimer _hideTimer;
     private Storyboard? _pulseStoryboard;
+    private System.Windows.Forms.Screen? _lockedScreen;
 
     public HudWindow()
     {
@@ -58,7 +60,7 @@ public partial class HudWindow : Window
         _pulseStoryboard ??= Resources["DotPulseStoryboard"] as Storyboard;
         _pulseStoryboard?.Begin(this, true);
 
-        ShowAndPosition();
+        ShowAndPosition(null, isNewCycle: true);
     }
 
     /// <summary>
@@ -77,7 +79,7 @@ public partial class HudWindow : Window
         MessageText.Foreground = new SolidColorBrush(MediaColor.FromRgb(0xA0, 0xB8, 0xA8));
         MessageText.Text = string.IsNullOrWhiteSpace(message) ? "Done" : message;
         
-        ShowAndPosition(TimeSpan.FromSeconds(1.2));
+        ShowAndPosition(TimeSpan.FromSeconds(1.2), isNewCycle: false);
     }
 
     /// <summary>
@@ -96,7 +98,16 @@ public partial class HudWindow : Window
         MessageText.Foreground = new SolidColorBrush(MediaColor.FromRgb(0xB8, 0xA0, 0xA0));
         MessageText.Text = string.IsNullOrWhiteSpace(message) ? "Error" : message;
         
-        ShowAndPosition(TimeSpan.FromSeconds(2.5));
+        ShowAndPosition(TimeSpan.FromSeconds(2.5), isNewCycle: false);
+    }
+
+    public new void Hide()
+    {
+        _hideTimer.Stop();
+        _pulseStoryboard?.Stop(this);
+        StatusDot.BeginAnimation(UIElement.OpacityProperty, null);
+        _lockedScreen = null;
+        base.Hide();
     }
 
     public void ApplyThemeColors(Flow.Domain.AppTheme theme)
@@ -104,14 +115,15 @@ public partial class HudWindow : Window
         // HUD colors are hardcoded to match CSS spec exactly, theme switching is N/A for HUD
     }
 
-    private void ShowAndPosition(TimeSpan? hideAfter = null)
+    private void ShowAndPosition(TimeSpan? hideAfter = null, bool isNewCycle = false)
     {
-        Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
-        PositionWindow();
+        PositionWindow(isNewCycle);
+        AnimateWidth();
         
         if (!IsVisible)
         {
             Show();
+            PositionWindow(isNewCycle: false);
         }
 
         if (hideAfter.HasValue)
@@ -121,27 +133,77 @@ public partial class HudWindow : Window
         }
     }
 
-    private void PositionWindow()
+    private void AnimateWidth()
     {
-        Win32Point cursorPosition = new Win32Point();
-        GetCursorPos(ref cursorPosition);
+        ContainerBorder.BeginAnimation(FrameworkElement.WidthProperty, null);
 
-        var screen = System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point(cursorPosition.X, cursorPosition.Y));
-        var workingArea = screen.WorkingArea;
+        MessageText.InvalidateMeasure();
+        MessageText.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        // Fixed overhead: Left padding (10) + Dot (8) + Gap (8) + Right padding (18) + Border stroke (2) = 46
+        double targetWidth = Math.Max(Math.Ceiling(MessageText.DesiredSize.Width + 46.0), 64.0);
+
+        if (!IsVisible || double.IsNaN(ContainerBorder.ActualWidth) || ContainerBorder.ActualWidth <= 0)
+        {
+            ContainerBorder.Width = targetWidth;
+            return;
+        }
+
+        double currentWidth = ContainerBorder.ActualWidth;
+        if (Math.Abs(currentWidth - targetWidth) < 1.0)
+        {
+            ContainerBorder.Width = targetWidth;
+            return;
+        }
+
+        ContainerBorder.Width = currentWidth;
+        var animation = new DoubleAnimation
+        {
+            From = currentWidth,
+            To = targetWidth,
+            Duration = TimeSpan.FromMilliseconds(220),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        ContainerBorder.BeginAnimation(FrameworkElement.WidthProperty, animation);
+    }
+
+    private void PositionWindow(bool isNewCycle)
+    {
+        if (isNewCycle || _lockedScreen == null)
+        {
+            var cursorPosition = new Win32Point();
+            GetCursorPos(ref cursorPosition);
+
+            _lockedScreen = System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point(cursorPosition.X, cursorPosition.Y))
+                            ?? System.Windows.Forms.Screen.PrimaryScreen
+                            ?? (System.Windows.Forms.Screen.AllScreens.Length > 0 ? System.Windows.Forms.Screen.AllScreens[0] : null);
+        }
+
+        if (_lockedScreen == null) return;
+
+        var workingArea = _lockedScreen.WorkingArea;
         
         var source = PresentationSource.FromVisual(this);
         double dpiX = source?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
         double dpiY = source?.CompositionTarget?.TransformToDevice.M22 ?? 1.0;
 
+        if (source == null)
+        {
+            var dpi = VisualTreeHelper.GetDpi(this);
+            if (dpi.DpiScaleX > 0) dpiX = dpi.DpiScaleX;
+            if (dpi.DpiScaleY > 0) dpiY = dpi.DpiScaleY;
+        }
+
         double screenLeft = workingArea.Left / dpiX;
         double screenBottom = workingArea.Bottom / dpiY;
         double screenWidth = workingArea.Width / dpiX;
 
-        double windowWidth = DesiredSize.Width > 0 ? DesiredSize.Width : (ActualWidth > 0 ? ActualWidth : 120);
-        double windowHeight = DesiredSize.Height > 0 ? DesiredSize.Height : (ActualHeight > 0 ? ActualHeight : 40);
+        double windowWidth = Width > 0 ? Width : 600;
+        double windowHeight = Height > 0 ? Height : 64;
 
-        this.Left = screenLeft + (screenWidth - windowWidth) / 2;
-        this.Top = screenBottom - windowHeight - 40;
+        this.Left = screenLeft + (screenWidth - windowWidth) / 2.0;
+        this.Top = screenBottom - windowHeight - 32.0;
     }
 
     private const int GWL_EXSTYLE = -20;

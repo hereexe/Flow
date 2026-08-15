@@ -2,7 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Flow HUD"
-        SizeToContent="WidthAndHeight"
+        SizeToContent="Manual"
+        Width="600"
+        Height="64"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -27,12 +29,12 @@
         </Storyboard>
     </Window.Resources>
 
-    <!-- Margin for shadow bleed space -->
-    <Grid Margin="12">
+    <!-- Centered Transparent Container -->
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <!-- 
              CSS: background: rgba(22,24,36,.85)   → #D9161824
                   border: 1px solid rgba(255,255,255,.06) → #0FFFFFFF
-                  border-radius: 100px              → CornerRadius="100"
+                  border-radius: 100px              → CornerRadius="16"
                   box-shadow: 0 4px 20px rgba(0,0,0,.45)  → DropShadowEffect
         -->
         <Border x:Name="ContainerBorder"
@@ -54,20 +56,21 @@
 
             <!-- 
                  CSS inset: inset 0 0.5px 0 rgba(255,255,255,.08) → #14FFFFFF top border
-                 CSS padding: 7px 18px 7px 10px → Padding="10,7,18,7"
+                 CSS padding: 7px 18px 7px 10px → Padding="10,0,18,0"
             -->
             <Border CornerRadius="16"
                     BorderBrush="#14FFFFFF"
                     BorderThickness="0,1,0,0"
                     Padding="10,0,18,0">
                 <!-- CSS: display:inline-flex; align-items:center; gap:8px -->
-                <StackPanel Orientation="Horizontal"
+                <StackPanel x:Name="ContentStack"
+                            Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
                     <!-- 
                          CSS .hud-dot: width:8px; height:8px; border-radius:50%;
-                              background: var(accent-blue) = #4d8ef7
-                              animation: pulse 1.5s ease-in-out infinite
+                               background: var(accent-blue) = #4d8ef7
+                               animation: pulse 1.5s ease-in-out infinite
                          gap:8px → Margin="0,0,8,0"
                     -->
                     <Ellipse x:Name="StatusDot"
@@ -87,7 +90,7 @@
                                FontWeight="Medium"
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis"
-                               MaxWidth="260"/>
+                               MaxWidth="400"/>
                 </StackPanel>
             </Border>
         </Border>
