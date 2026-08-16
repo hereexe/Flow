@@ -1,4 +1,4 @@
-# Flow — Instant In-Place AI Translator
+# Flow — Instant In-Place Translator
 
 <p align="center">
   <img src="Flow.Presentation/Assets/flow.ico" alt="Flow Logo" width="128" height="128" />
